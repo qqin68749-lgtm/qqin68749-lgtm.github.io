@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="可云同步、自定义分类与网站图标的个人科研生活导航" />
+<title>我的科研 · 生活导航</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#f5f7fb; --panel:rgba(255,255,255,.84); --panel-solid:#fff;
+  --text:#172033; --muted:#718096; --line:rgba(125,140,160,.18);
+  --shadow:0 12px 34px rgba(30,45,70,.10); --shadow-hover:0 18px 40px rgba(30,45,70,.15);
+  --accent:#5b6df8; --accent-soft:rgba(91,109,248,.10); --danger:#d9485f;
+  --ok:#218739; --warn:#b78103; --backdrop:blur(14px);
+}
+body.dark{
+  --panel:rgba(24,29,39,.84); --panel-solid:#181d27; --text:#eef3fa; --muted:#9aa7bb;
+  --line:rgba(255,255,255,.10); --shadow:0 12px 34px rgba(0,0,0,.24);
+  --shadow-hover:0 18px 42px rgba(0,0,0,.34); --accent:#91a2ff; --accent-soft:rgba(145,162,255,.13);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; min-height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  color:var(--text); background:var(--bg); background-size:cover; background-position:center;
+  background-attachment:fixed; transition:color .2s,background .25s;
+}
+button,input,select,textarea{font:inherit}
+button{color:inherit}
+.wrap{max-width:1360px;margin:0 auto;padding:38px 24px 70px}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:23px}
+.brand h1{margin:0;font-size:clamp(28px,4vw,42px);letter-spacing:-1px}
+.brand p{margin:8px 0 0;color:var(--muted);font-size:14px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.btn{
+  border:1px solid var(--line); background:var(--panel); backdrop-filter:var(--backdrop);
+  min-height:43px; padding:0 14px; border-radius:13px; cursor:pointer; box-shadow:var(--shadow);
+  display:inline-flex;align-items:center;justify-content:center;gap:7px; transition:.16s ease;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-hover)}
+.btn.primary{background:var(--accent);color:white;border-color:transparent}
+.btn.danger{color:var(--danger)}
+.iconbtn{width:43px;padding:0}
+.sync-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
+.sync-dot.ok{background:var(--ok)} .sync-dot.warn{background:var(--warn)}
+.searchbar{
+  display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:18px;padding:0 17px;height:58px;box-shadow:var(--shadow);backdrop-filter:var(--backdrop);margin-bottom:24px;
+}
+.searchbar input{flex:1;border:0;outline:0;background:transparent;color:var(--text);font-size:16px;min-width:0}
+.searchbar kbd{font-size:12px;color:var(--muted);border:1px solid var(--line);border-bottom-width:2px;border-radius:8px;padding:4px 7px;background:var(--panel-solid)}
+.info-row{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:0 2px 15px}
+.section{margin:28px 0 34px;padding:14px;border-radius:24px;transition:.2s ease}
+.section.editing{outline:1px dashed color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--panel) 45%,transparent)}
+.section.dragging{opacity:.45}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 1px 13px}
+.section-title{display:flex;align-items:center;gap:10px;min-width:0}
+.section-title h2{font-size:18px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.section-title small{color:var(--muted);font-size:12px}
+.section-tools{display:none;gap:7px;flex-wrap:wrap}
+body.edit-mode .section-tools{display:flex}
+.mini{border:1px solid var(--line);background:var(--panel);backdrop-filter:var(--backdrop);border-radius:10px;padding:6px 9px;cursor:pointer;font-size:12px}
+.mini:hover{border-color:var(--accent)}
+.mini.danger{color:var(--danger)}
+.drag-handle{cursor:grab;user-select:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:13px}
+.card{
+  display:flex;align-items:center;gap:13px;min-height:84px;padding:15px 16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);
+  backdrop-filter:var(--backdrop);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease,opacity .16s;
+  position:relative;overflow:hidden;
+}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover);border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.card.dragging{opacity:.35}
+.site-icon{
+  width:48px;height:48px;flex:0 0 48px;border-radius:14px;background:#fff;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;padding:5px;
+}
+.site-icon img{width:100%;height:100%;object-fit:contain;border-radius:9px}
+.site-icon .fallback{display:none;color:var(--accent);font-weight:800;font-size:13px;text-align:center}
+.meta{min-width:0;flex:1}
+.name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.desc{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{position:absolute;right:10px;top:9px;font-size:10px;color:var(--accent);background:var(--accent-soft);padding:3px 6px;border-radius:8px}
+.card-tools{display:none;position:absolute;right:8px;bottom:8px;gap:5px}
+body.edit-mode .card-tools{display:flex}
+.card-tool{border:1px solid var(--line);background:var(--panel-solid);width:28px;height:28px;border-radius:9px;cursor:pointer;font-size:12px}
+body.edit-mode .card{padding-bottom:38px}
+body.edit-mode .card::after{content:"⋮⋮";position:absolute;left:10px;bottom:8px;color:var(--muted);font-size:13px;letter-spacing:-2px;cursor:grab}
+.add-category{
+  display:none;width:100%;min-height:68px;border:1px dashed var(--line);color:var(--muted);
+  background:var(--panel);border-radius:18px;cursor:pointer;backdrop-filter:var(--backdrop)
+}
+body.edit-mode .add-category{display:block}
+.empty{text-align:center;color:var(--muted);padding:55px 0 10px;display:none}
+footer{margin-top:42px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,15,25,.45);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+.modal-backdrop.show{display:flex}
+.modal{width:min(620px,100%);max-height:90vh;overflow:auto;background:var(--panel-solid);color:var(--text);border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 70px rgba(0,0,0,.25);padding:22px}
+.modal h3{margin:0 0 18px}
+.form-row{margin:13px 0}
+.form-row label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+.input,.select,.textarea{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:11px 12px;outline:none}
+.textarea{min-height:88px;resize:vertical}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--accent)}
+.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:19px;flex-wrap:wrap}
+.help{color:var(--muted);font-size:12px;line-height:1.55;margin-top:6px}
+.notice{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);padding:11px 12px;border-radius:12px;color:var(--text);font-size:12px;line-height:1.55}
+.status-box{padding:11px 12px;border-radius:12px;border:1px solid var(--line);font-size:12px;line-height:1.6;margin:12px 0}
+.bg-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.bg-swatch{height:60px;border-radius:14px;border:2px solid transparent;cursor:pointer=
+hr.sep{border:0;border-top:1px solid var(--line);margin:18px 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.checkbox{display:flex;align-items:center;gap:8px;font-size:13px}
+@media(max-width:760px){
+ .wrap{padding:28px 14px 50px}.hero{align-items:flex-start;flex-direction:column}.actions{justify-content:flex-start}
+ .grid{grid-template-columns:1fr 1fr}.searchbar kbd{display:none}.desc{display:none}.card{min-height:78px}.row2{grid-template-columns:1fr}
+}
+@media(max-width:470px){.grid{grid-template-columns:1fr}.actions .txt{display:none}.bg-presets{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="hero">
+    <div class="brand">
+      <h1 id="pageTitle">我的科研 · 生活导航</h1>
+      <p id="pageSubtitle">科研、数据库、校园与生活入口集中管理。</p>
+    </div>
+    <div class="actions">
+      <button class="btn iconbtn" id="themeBtn" title="切换明暗模式">☾</button>
+      <button class="btn" id="backgroundBtn">🖼️ <span class="txt">背景</span></button>
+      <button class="btn" id="cloudBtn"><span class="sync-dot" id="syncDot"></span><span class="txt" id="cloudBtnText">云同步</span></button>
+      <button class="btn" id="dataBtn">💾 <span class="txt">数据</span></button>
+      <button class="btn primary" id="editBtn">✏️ <span class="txt">编辑页面</span></button>
+    </div>
+  </div>
+
+  <div class="searchbar">
+    <span>⌕</span>
+    <input id="filter" type="text" autocomplete="off" placeholder="搜索网站、用途或关键词，例如：VASP / 文献 / 晶体…" />
+    <kbd>/</kbd>
+  </div>
+  <div class="info-row"><span id="statusText">浏览模式</span><span id="syncText">本地保存</span></div>
+
+  <div id="sections"></div>
+  <button class="add-category" id="addCategoryBtn">＋ 新建分类</button>
+  <div class="empty" id="empty">没有找到匹配的网站。</div>
+
+  <footer>
+    <span>网站图标会自动读取对应站点 favicon；编辑网站时也可手动指定图标网址。</span>
+    <span>云同步使用你自己的 Supabase 项目，不依赖本页面开发者服务器。</span>
+  </footer>
+</main>
+
+<div class="modal-backdrop" id="modalBackdrop"><div class="modal" id="modal"></div></div>
+
+<script>
+const DEFAULT_DATA = {
+  title:"我的科研 · 生活导航",
+  subtitle:"科研、数据库、校园与生活入口集中管理。",
+  _meta:{updatedAt:new Date().toISOString()},
+  sections:[
+    {id:crypto.randomUUID(),title:"🌐 网络工具",subtitle:"VPN / 网络访问",links:[
+      {id:crypto.randomUUID(),name:"一朵云",url:"https://web1.yiduocloud.com/#/start",iconUrl:"",icon:"YD",desc:"常用 VPN / 网络入口",keywords:"VPN 一朵云 yiduocloud 网络 加速",tag:"常用"},
+      {id:crypto.randomUUID(),name:"SJ 加速",url:"https://sjiasu.com/#/landing",iconUrl:"",icon:"SJ",desc:"常用网络访问入口",keywords:"VPN sjiasu 网络 加速",tag:""}
+    ]},
+    {id:crypto.randomUUID(),title:"📚 文献检索",subtitle:"检索 · 出版社 · 开放资源",links:[
+      {id:crypto.randomUUID(),name:"Yovisun 文献工具",url:"https://tool.yovisun.com/scihub/",iconUrl:"",icon:"PDF",desc:"你提供的文献入口",keywords:"文献 PDF yovisun",tag:"常用"},
+      {id:crypto.randomUUID(),name:"Google Scholar",url:"https://scholar.google.com/",iconUrl:"",icon:"GS",desc:"综合学术检索与引用追踪",keywords:"Google Scholar 谷歌学术 文献 引用",tag:""},
+      {id:crypto.randomUUID(),name:"Web of Science",url:"https://www.webofscience.com/wos/woscc/basic-search",iconUrl:"",icon:"WoS",desc:"SCI 检索、作者与引用分析",keywords:"Web of Science WOS SCI 文献 作者 引用",tag:""},
+      {id:crypto.randomUUID(),name:"Scopus",url:"https://www.scopus.com/",iconUrl:"",icon:"Sc",desc:"Elsevier 学术文献与引用数据库",keywords:"Scopus Elsevier 文献 引用 作者",tag:""},
+      {id:crypto.randomUUID(),name:"ScienceDirect",url:"https://www.sciencedirect.com/",iconUrl:"",icon:"SD",desc:"Elsevier 期刊与论文平台",keywords:"ScienceDirect Elsevier 期刊 文献",tag:""},
+      {id:crypto.randomUUID(),name:"SpringerLink",url:"https://link.springer.com/",iconUrl:"",icon:"Sp",desc:"Springer 期刊与图书",keywords:"Springer SpringerLink 期刊 文献",tag:""},
+      {id:crypto.randomUUID(),name:"Wiley Online Library",url:"https://onlinelibrary.wiley.com/",iconUrl:"",icon:"Wy",desc:"Advanced 系列等 Wiley 期刊",keywords:"Wiley Advanced Materials 文献 期刊",tag:""},
+      {id:crypto.randomUUID(),name:"ACS Publications",url:"https://pubs.acs.org/",iconUrl:"",icon:"ACS",desc:"ACS 化学与材料类期刊",keywords:"ACS Chemistry Materials 文献 期刊",tag:""},
+      {id:crypto.randomUUID(),name:"APS Journals",url:"https://journals.aps.org/",iconUrl:"",icon:"APS",desc:"PRL / PRB 等物理期刊",keywords:"APS Physical Review PRL PRB 物理 文献",tag:""},
+      {id:crypto.randomUUID(),name:"Semantic Scholar",url:"https://www.semanticscholar.org/",iconUrl:"",icon:"SS",desc:"AI 辅助文献发现与关联检索",keywords:"Semantic Scholar AI 文献 检索 推荐",tag:""},
+      {id:crypto.randomUUID(),name:"CORE",url:"https://core.ac.uk/",iconUrl:"",icon:"OA",desc:"聚合开放获取论文与机构仓储",keywords:"CORE open access 开放获取 免费 PDF 文献",tag:""},
+      {id:crypto.randomUUID(),name:"DOAJ",url:"https://doaj.org/",iconUrl:"",icon:"DOAJ",desc:"开放获取期刊目录",keywords:"DOAJ open access 开放获取 期刊 文献",tag:""},
+      {id:crypto.randomUUID(),name:"arXiv",url:"https://arxiv.org/",iconUrl:"",icon:"arX",desc:"预印本检索，适合追踪最新工作",keywords:"arXiv preprint 预印本 物理 材料",tag:""},
+      {id:crypto.randomUUID(),name:"Crossref Search",url:"https://search.crossref.org/",iconUrl:"",icon:"DOI",desc:"按题目、作者、DOI 精确查找",keywords:"Crossref DOI 文献 检索",tag:""},
+      {id:crypto.randomUUID(),name:"ResearchGate",url:"https://www.researchgate.net/",iconUrl:"",icon:"RG",desc:"作者主页、论文与全文请求",keywords:"ResearchGate 作者 全文 文献",tag:""}
+    ]},
+    {id:crypto.randomUUID(),title:"🧱 晶体与材料数据库",subtitle:"结构 · CIF / COD · 计算材料",links:[
+      {id:crypto.randomUUID(),name:"Materials Project",url:"https://next-gen.materialsproject.org/",iconUrl:"",icon:"MP",desc:"材料结构、能带、热力学等计算数据",keywords:"Materials Project MP 晶体 结构 CIF 材料数据库 DFT",tag:"常用"},
+      {id:crypto.randomUUID(),name:"Crystallography Open Database",url:"https://www.crystallography.net/cod/",iconUrl:"",icon:"COD",desc:"开放晶体结构与 CIF 数据",keywords:"COD Crystallography Open Database 晶体 CIF",tag:""},
+      {id:crypto.randomUUID(),name:"CCDC",url:"https://www.ccdc.cam.ac.uk/",iconUrl:"",icon:"CCDC",desc:"剑桥晶体结构数据库入口",keywords:"CCDC Cambridge Structural Database CSD 晶体 结构",tag:""},
+      {id:crypto.randomUUID(),name:"OQMD",url:"https://oqmd.org/",iconUrl:"",icon:"OQ",desc:"高通量 DFT 材料与形成能数据",keywords:"OQMD materials database DFT formation energy 材料",tag:""},
+      {id:crypto.randomUUID(),name:"AFLOW",url:"https://aflow.org/",iconUrl:"",icon:"AF",desc:"高通量材料计算数据库",keywords:"AFLOW materials database DFT 晶体 材料",tag:""}
+    ]},
+    {id:crypto.randomUUID(),title:"⚛️ AlScN 专题",subtitle:"结构 · 缺陷 · 极化翻转",links:[
+      {id:crypto.randomUUID(),name:"AlScN SQS · x = 0.25",url:"https://github.com/prashungorai/papers/blob/main/2024/alscn-defects-polarization-switching/alloying_SQS/x0.25/CONTCAR",iconUrl:"",icon:"AlN",desc:"缺陷 / 极化翻转工作中的 CONTCAR",keywords:"AlScN SQS CONTCAR defects polarization switching GitHub 结构",tag:"专题"}
+    ]},
+    {id:crypto.randomUUID(),title:"🏫 校园与研穵生事务",subtitle:"东北师范大学",links:[
+      {id:crypto.randomUUID(),name:"东北师范大学研究生院",url:"https://yjsy.nenu.edu.cn/",iconUrl:"",icon:"NENU",desc:"培养、学位、通知与研究生事务",keywords:"东北师范大学 研究生院 NENU 研究生 培养 学位 通知",tag:"学校"},
+      {id:crypto.randomUUID(),name:"东北师范大学",url:"https://www.nenu.edu.cn/",iconUrl:"",icon:"NU",desc:"学校主页",keywords:"东北师范大学 官网 NENU 学校",tag:""}
+    ]}
+  ],
+  background:{type:"preset",value:"linear-gradient(135deg,#f5f7fb 0%,#eef3ff 45%,#f4fbf9 100%)"}
+};
+
+let appData=loadData(), editMode=false, filterText="";
+let sb=null, currentUser=null, cloudTimer=null, pollTimer=null, lastCloudUpdatedAt=null;
+
+const $=id=>document.getElementById(id);
+const sectionsEl=$("sections"), filter=$("filter"), modalBackdrop=$("modalBackdrop"), modal=$("modal");
+
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function loadData(){
+  try{const raw=localStorage.getItem("myPortalDataV3"); if(raw) return JSON.parse(raw)}catch(e){}
+  try{const old=localStorage.getItem("myPortalDataV2"); if(old){const d=JSON.parse(old); d._meta={updatedAt:new Date().toISOString()}; return d}}catch(e){}
+  return clone(DEFAULT_DATA)
+}
+function saveData({sync=true}={}){
+  appData._meta=appData._meta||{};
+  appData._meta.updatedAt=new Date().toISOString();
+  localStorage.setItem("myPortalDataV3",JSON.stringify(appData));
+  setSyncStatus(currentUser ? "等待同步…" : "本地保存",currentUser?"warn":"");
+  if(sync && cloudReady() && cloudCfg().autoSync) scheduleCloudPush();
+}
+function cloudCfg(){
+  try{return JSON.parse(localStorage.getItem("portalCloudConfig")||"{}")}catch(e){return{}}
+}
+function setCloudCfg(cfg){localStorage.setItem("portalCloudConfig",JSON.stringify(cfg))}
+function cloudReady(){const c=cloudCfg(); return !!(sb && currentUser && c.url && c.anonKey)}
+function setSyncStatus(text,state=""){
+  $("syncText").textContent=text; $("syncDot").className="sync-dot"+(state?` ${state}`:"");
+}
+function safeHost(url){
+  try{return new URL(url).hostname}catch(e){return""}
+}
+function autoFavicon(link){
+  if(link.iconUrl) return link.iconUrl;
+  const host=safeHost(link.url); if(!host) return "";
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
+}
+function directFavicon(link){
+  try{const u=new URL(link.url); return `${u.protocol}//${u.host}/favicon.ico`}catch(e){return""}
+}
+function initials(name=""){
+  const clean=name.replace(/[^\p{L}\p{N}]/gu," ").trim(),parts=clean.split(/\s+/).filter(Boolean);
+  return (parts.length>=2?(parts[0][0]+parts[1][0]):clean.slice(0,4)).toUpperCase()||"WEB"
+}
+function applyBackground(){
+  const bg=appData.background||DEFAULT_DATA.background;
+  if(bg.type==="image"){document.body.style.backgroundImage=`linear-gradient(rgba(245,247,251,.10),rgba(245,247,251,.10)),url("${bg.value}")`;document.body.style.backgroundColor="#eef2f7"}
+  else if(bg.type==="color"){document.body.style.backgroundImage="none";document.body.style.backgroundColor=bg.value||"#f5f7fb"}
+  else{document.body.style.backgroundImage=bg.value||DEFAULT_DATA.background.value;document.body.style.backgroundColor="#f5f7fb"}
+}
+function render(){
+  $("pageTitle").textContent=appData.title||DEFAULT_DATA.title; $("pageSubtitle").textContent=appData.subtitle||"";
+  sectionsEl.innerHTML=""; let totalVisible=0; const q=filterText.trim().toLowerCase();
+  appData.sections.forEach(section=>{
+    const visible=section.links.filter(link=>!q||[link.name,link.desc,link.keywords,link.tag,section.title,section.subtitle].join(" ").toLowerCase().includes(q));
+    if(q&&!visible.length)return; totalVisible+=visible.length;
+    const sec=document.createElement("section"); sec.className="section"+(editMode?" editing":""); sec.dataset.sectionId=section.id; sec.draggable=editMode;
+    sec.innerHTML=`<div class="section-head">
+      <div class="section-title">${editMode?'<span class="drag-handle" title="拖拽分类">⠿</span>':""}<h2>${esc(section.title)}</h2><small>${esc(section.subtitle||"")}</small></div>
+      <div class="section-tools"><button class="mini" data-act="add-link">＋ 网站</button><button class="mini" data-act="edit-section">重命名</button><button class="mini danger" data-act="delete-section">删除分类</button></div>
+      </div><div class="grid"></div>`;
+    const grid=sec.querySelector(".grid");
+    visible.forEach(link=>{
+      const card=document.createElement("a"); card.className="card"; card.href=editMode?"javascript:void(0)":link.url; card.target=editMode?"":"_blank"; card.rel="noopener"; card.dataset.linkId=link.id; card.draggable=editMode;
+      const src=autoFavicon(link), direct=directFavicon(link), fb=esc(link.icon||initials(link.name));
+      card.innerHTML=`<div class="site-icon">
+        <img src="${esc(src)}" alt="" data-direct="${esc(direct)}" onerror="faviconFallback(this)">
+        <span class="fallback">${fb}</span></div>
+        <div class="meta"><div class="name">${esc(link.name)}</div><div class="desc">${esc(link.desc||"")}</div></div>
+        ${link.tag?`<span class="tag">${esc(link.tag)}</span>`:""}
+        <div class="card-tools"><button class="card-tool" data-card-act="edit" title="编辑">✎</button><button class="card-tool" data-card-act="delete" title="删除">×</button></div>`;
+      if(editMode)card.addEventListener("click",e=>e.preventDefault());
+      grid.appendChild(card)
+    });
+    sectionsEl.appendChild(sec)
+  });
+  $("empty").style.display=totalVisible?"none":"block"; $("statusText").textContent=editMode?"编辑模式：可拖拽、增删和修改":"浏览模式";
+  document.body.classList.toggle("edit-mode",editMode); $("editBtn").innerHTML=editMode?'✓ <span class="txt">完成编辑</span>':'✏️ <span class="txt">编辑页面</span>';
+  applyBackground(); bindDynamicEvents()
+}
+window.faviconFallback=function(img){
+  if(!img.dataset.triedDirect && img.dataset.direct){
+    img.dataset.triedDirect="1"; img.src=img.dataset.direct; return;
+  }
+  img.style.display="none"; const fb=img.parentElement.querySelector(".fallback"); if(fb)fb.style.display="block";
+}
+function bindDynamicEvents(){
+  document.querySelectorAll('[data-act="add-link"]').forEach(b=>b.onclick=()=>openLinkModal(b.closest(".section").dataset.sectionId));
+  document.querySelectorAll('[data-act="edit-section"]').forEach(b=>b.onclick=()=>openSectionModal(b.closest(".section").dataset.sectionId));
+  document.querySelectorAll('[data-act="delete-section"]').forEach(b=>b.onclick=()=>{
+    const id=b.closest(".section").dataset.sectionId,sec=appData.sections.find(s=>s.id===id);
+    if(confirm(`确定删除分类“${sec.title}”吗？其中的网站也会一起删除。`)){appData.sections=appData.sections.filter(s=>s.id!==id);saveData();render()}
+  });
+  document.querySelectorAll('[data-card-act="edit"]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();openLinkModal(b.closest(".section").dataset.sectionId,b.closest(".card").dataset.linkId)});
+  document.querySelectorAll('[data-card-act="delete"]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();
+    const sid=b.closest(".section").dataset.sectionId,lid=b.closest(".card").dataset.linkId,sec=appData.sections.find(s=>s.id===sid),link=sec.links.find(l=>l.id===lid);
+    if(confirm(`确定删除“${link.name}”吗？`)){sec.links=sec.links.filter(l=>l.id!==lid);saveData();render()}
+  });
+  if(editMode)bindDragDrop()
+}
+function bindDragDrop(){
+  let ds=null,dl=null;
+  document.querySelectorAll(".section").forEach(sec=>{
+    sec.addEventListener("dragstart",e=>{if(e.target.classList.contains("card"))return;ds=sec.dataset.sectionId;sec.classList.add("dragging");e.dataTransfer.effectAllowed="move"});
+    sec.addEventListener("dragend",()=>{sec.classList.remove("dragging");ds=null});
+    sec.addEventListener("dragover",e=>{if(!ds)return;e.preventDefault();const tid=sec.dataset.sectionId;if(tid===ds)return;
+      const from=appData.sections.findIndex(s=>s.id===ds),to=appData.sections.findIndex(s=>s.id===tid),[m]=appData.sections.splice(from,1);appData.sections.splice(to,0,m);saveData();render()
+    })
+  });
+  document.querySelectorAll(".card").forEach(card=>{
+    card.addEventListener("dragstart",e=>{e.stopPropagation();dl={sectionId:card.closest(".section").dataset.sectionId,linkId:card.dataset.linkId};card.classList.add("dragging");e.dataTransfer.effectAllowed="move"});
+    card.addEventListener("dragend",()=>{card.classList.remove("dragging");dl=null});
+    card.addEventListener("dragover",e=>{if(!dl)return;e.preventDefault();e.stopPropagation();
+      const ts=card.closest(".section").dataset.sectionId,tl=card.dataset.linkId;if(dl.sectionId===ts&&dl.linkId===tl)return;
+      const fs=appData.sections.find(s=>s.id===dl.sectionId),tos=appData.sections.find(s=>s.id===ts),fi=fs.links.findIndex(l=>l.id===dl.linkId),ti=tos.links.findIndex(l=>l.id===tl),[m]=fs.links.splice(fi,1);tos.links.splice(ti,0,m);dl.sectionId=ts;saveData();render()
+    })
+  });
+  document.querySelectorAll(".grid").forEach(grid=>grid.addEventListener("dragover",e=>{if(!dl||e.target.closest(".card"))return;e.preventDefault();
+    const ts=grid.closest(".section").dataset.sectionId;if(ts===dl.sectionId)return;
+    const fs=appData.sections.find(s=>s.id===dl.sectionId),tos=appData.sections.find(s=>s.id===ts),fi=fs.links.findIndex(l=>l.id===dl.linkId),[m]=fs.links.splice(fi,1);tos.links.push(m);dl.sectionId=ts;saveData();render()
+  }))
+}
+function openModal(h){modal.innerHTML=h;modalBackdrop.classList.add("show")}
+function closeModal(){modalBackdrop.classList.remove("show");modal.innerHTML=""}
+modalBackdrop.addEventListener("click",e=>{if(e.target===modalBackdrop)closeModal()});
+
+function openSectionModal(id=null){
+  const ex=id?appData.sections.find(s=>s.id===id):null;
+  openModal(`<h3>${ex?"编辑分类":"新建分类"}</h3>
+  <div class="form-row"><label>分类名称</label><input class="input" id="secTitle" value="${esc(ex?.title||"")}" placeholder="例如：💻 VASP / HPC"></div>
+  <div class="form-row"><label>副标题（可选）</label><input class="input" id="secSubtitle" value="${esc(ex?.subtitle||"")}" placeholder="例如：计算 · Linux · 集群"></div>
+  <div class="modal-actions"><button class="btn" id="cancelModal">取消</button><button class="btn primary" id="saveSection">${ex?"保存":"创建"}</button></div>`);
+  $("cancelModal").onclick=closeModal;$("saveSection").onclick=()=>{const t=$("secTitle").value.trim();if(!t)return alert("请输入分类名称");const sub=$("secSubtitle").value.trim();
+    if(ex){ex.title=t;ex.subtitle=sub}else appData.sections.push({id:crypto.randomUUID(),title:t,subtitle:sub,links:[]});saveData();closeModal();render()}
+}
+function openLinkModal(sectionId,linkId=null){
+  const sec=appData.sections.find(s=>s.id===sectionId),ex=linkId?sec.links.find(l=>l.id===linkId):null;
+  openModal(`<h3>${ex?"编辑网站":"添加网站"}</h3>
+  <div class="form-row"><label>网站名称</label><input class="input" id="linkName" value="${esc(ex?.name||"")}" placeholder="例如：VASP Wiki"></div>
+  <div class="form-row"><label>网址</label><input class="input" id="linkUrl" value="${esc(ex?.url||"https://")}" placeholder="https://..."></div>
+  <div class="form-row"><label>自定义图标网址（可选）</label><input class="input" id="linkIconUrl" value="${esc(ex?.iconUrl||"")}" placeholder="留空则自动读取网站 favicon"></div>
+  <div class="help">默认会自动读取网站图标；如果识别不好，可以粘贴 PNG / SVG / ICO 图片地址。</div>
+  <div class="row2"><div class="form-row"><label>备用图标文字</label><input class="input" id="linkIcon" value="${esc(ex?.icon||"")}" placeholder="VASP"></div>
+  <div class="form-row"><label>角标（可选）</label><input class="input" id="linkTag" value="${esc(ex?.tag||"")}" placeholder="常用"></div></div>
+  <div class="form-row"><label>说明</label><input class="input" id="linkDesc" value="${esc(ex?.desc||"")}" placeholder="一句话说明用途"></div>
+  <div class="form-row"><label>搜索关键词</label><input class="input" id="linkKeywords" value="${esc(ex?.keywords||"")}" placeholder="VASP DFT 计算 文档"></div>
+  <div class="modal-actions"><button class="btn" id="cancelModal">取消</button><button class="btn primary" id="saveLink">${ex?"保存":"添加"}</button></div>`);
+  $("cancelModal").onclick=closeModal;$("saveLink").onclick=()=>{const name=$("linkName").value.trim();let url=$("linkUrl").value.trim();if(!name||!url)return alert("网站名称和网址不能为空");if(!/^https?:\/\//i.test(url))url="https://"+url;
+    const obj={id:ex?.id||crypto.randomUUID(),name,url,iconUrl:$("linkIconUrl").value.trim(),icon:$("linkIcon").value.trim()||initials(name),desc:$("linkDesc").value.trim(),keywords:$("linkKeywords").value.trim(),tag:$("linkTag").value.trim()};
+    if(ex)Object.assign(ex,obj);else sec.links.push(obj);saveData();closeModal();render()}
+}
+
+function openBackgroundModal(){
+  const p=["linear-gradient(135deg,#f5f7fb 0%,#eef3ff 45%,#f4fbf9 100%)","linear-gradient(135deg,#fff7f0 0%,#fff1f7 45%,#f2efff 100%)","linear-gradient(135deg,#eef7ff 0%,#e8fff8 50%,#f8fbff 100%)","linear-gradient(135deg,#202736 0%,#27354f 48%,#1e293b 100%)","linear-gradient(135deg,#f8f4ea 0%,#e7efe9 50%,#f7f7f3 100%)","linear-gradient(135deg,#edf2f7 0%,#e2e8f0 45%,#f7fafc 100%)","linear-gradient(135deg,#f4ecff 0%,#eef4ff 50%,#eefdf7 100%)","linear-gradient(135deg,#18202d 0%,#20334a 50%,#182b2a 100%)"];
+  openModal(`<h3>背景设置</h3><div class="form-row"><label>渐变预设</label><div class="bg-presets">${p.map((x,i)=>`<div class="bg-swatch" data-bg="${esc(x)}" style="background:${x}" title="预设 ${i+1}"></div>`).join("")}</div></div>
+  <div class="form-row"><label>纯色背景</label><input type="color" id="bgColor" value="#f5f7fb"> <button class="mini" id="useColor">使用此颜色</button></div>
+  <hr class="sep"><div class="form-row"><label>上传背景图片</label><input type="file" id="bgFile" accept="image/*"><div class="help">图片会随配置同步到云端；建议压缩到 1MB 左右，避免配置过大。</div></div>
+  <div class="form-row"><label>或使用图片网址</label><input class="input" id="bgUrl" placeholder="https://..."><button class="mini" id="useBgUrl" style="margin-top:8px">使用图片网址</button></div>
+  <div class="modal-actions"><button class="btn danger" id="resetBg">恢复默认</button><button class="btn primary" id="closeBg">完成</button></div>`);
+  modal.querySelectorAll(".bg-swatch").forEach(el=>el.onclick=()=>{appData.background={type:"preset",value:el.dataset.bg};saveData();applyBackground()});
+  $("useColor").onclick=()=>{appData.background={type:"color",value:$("bgColor").value};saveData();applyBackground()};
+  $("useBgUrl").onclick=()=>{const u=$("bgUrl").value.trim();if(!u)return;appData.background={type:"image",value:u};saveData();applyBackground()};
+  $("bgFile").onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>2*1024*1024)return alert("建议使用 2MB 以内的图片");const r=new FileReader();r.onload=()=>{appData.background={type:"image",value:r.result};saveData();applyBackground()};r.readAsDataURL(f)};
+  $("resetBg").onclick=()=>{appData.background=clone(DEFAULT_DATA.background);saveData();applyBackground()};$("closeBg").onclick=closeModal
+}
+
+function openDataModal(){
+  openModal(`<h3>数据管理</h3><div class="notice">本地数据会自动保存在当前浏览器。启用云同步后，会同步到你自己的 Supabase 数据库。</div>
+  <div class="form-row"><label>主页标题</label><input class="input" id="titleEdit" value="${esc(appData.title||"")}"></div>
+  <div class="form-row"><label>副标题</label><input class="input" id="subtitleEdit" value="${esc(appData.subtitle||"")}"></div>
+  <div class="modal-actions" style="justify-content:flex-start"><button class="btn" id="saveTitle">保存标题</button><button class="btn" id="exportData">导出配置 JSON</button><label class="btn">导入配置 JSON<input type="file" id="importData" accept=".json,application/json" style="display:none"></label></div>
+  <hr class="sep"><div class="modal-actions"><button class="btn danger" id="resetAll">恢复初始配置</button><button class="btn primary" id="closeData">完成</button></div>`);
+  $("saveTitle").onclick=()=>{appData.title=$("titleEdit").value.trim()||DEFAULT_DATA.title;appData.subtitle=$("subtitleEdit").value.trim();saveData();render();alert("已保存")};
+  $("exportData").onclick=()=>{const blob=new Blob([JSON.stringify(appData,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="my-portal-config.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+  $("importData").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.sections))throw 0;appData=d;saveData();closeModal();render()}catch(err){alert("配置文件格式不正确")}};r.readAsText(f)};
+  $("resetAll").onclick=()=>{if(confirm("确定恢复初始配置吗？")){appData=clone(DEFAULT_DATA);saveData();closeModal();render()}};
+  $("closeData").onclick=closeModal
+}
+
+/* ---------- Supabase cloud sync ---------- */
+function initSupabase(){
+  const c=cloudCfg();
+  if(!c.url||!c.anonKey||!window.supabase){sb=null;currentUser=null;setSyncStatus("未配置云同步","");return}
+  try{sb=window.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true}})}
+  catch(e){sb=null;setSyncStatus("云配置无效","warn");return}
+}
+async function refreshSession(){
+  if(!sb){currentUser=null;return}
+  const {data}=await sb.auth.getSession(); currentUser=data?.session?.user||null;
+  updateCloudButton();
+}
+function updateCloudButton(){
+  const c=cloudCfg(); $("cloudBtnText").textContent=currentUser?"已登录":(c.url&&c.anonKey?"云登录":"云同步");
+  if(currentUser)setSyncStatus("云同步已连接","ok")
+}
+function scheduleCloudPush(){
+  clearTimeout(cloudTimer); cloudTimer=setTimeout(()=>pushCloud(true),900)
+}
+async function pushCloud(silent=false){
+  if(!cloudReady())return;
+  try{
+    const payload={...clone(appData),_meta:{...(appData._meta||{}),updatedAt:new Date().toISOString()}};
+    appData=payload; localStorage.setItem("myPortalDataV3",JSON.stringify(appData));
+    const {error}=await sb.from("portal_profiles").upsert({user_id:currentUser.id,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+    if(error)throw error; lastCloudUpdatedAt=payload._meta.updatedAt; setSyncStatus("已同步到云端","ok");
+    if(!silent)alert("已同步到云端")
+  }catch(e){setSyncStatus("云同步失败","warn");if(!silent)alert("同步失败："+(e.message||e))}
+}
+async function pullCloud(silent=false){
+  if(!cloudReady())return false;
+  try{
+    const {data,error}=await sb.from("portal_profiles").select("data,updated_at").eq("user_id",currentUser.id).maybeSingle();
+    if(error)throw error;
+    if(!data?.data){if(!silent)alert("云端还没有配置，将保存当前本地配置。");await pushCloud(true);return true}
+    const cloudData=data.data,ct=Date.parse(cloudData?._meta?.updatedAt||data.updated_at||0),lt=Date.parse(appData?._meta?.updatedAt||0);
+    if(!silent||ct>lt){
+      appData=cloudData; localStorage.setItem("myPortalDataV3",JSON.stringify(appData)); lastCloudUpdatedAt=cloudData?._meta?.updatedAt||data.updated_at; render(); setSyncStatus("已从云端更新","ok");
+      if(!silent)alert("已从云端读取最新配置")
+    }
+    return true
+  }catch(e){setSyncStatus("读取云端失败","warn");if(!silent)alert("读取失败："+(e.message||e));return false}
+}
+async function smartSync(){
+  if(!cloudReady())return;
+  try{
+    const {data,error}=await sb.from("portal_profiles").select("data,updated_at").eq("user_id",currentUser.id).maybeSingle();
+    if(error)throw error;
+    if(!data?.data){await pushCloud(true);return}
+    const cloud=data.data,ct=Date.parse(cloud?._meta?.updatedAt||data.updated_at||0),lt=Date.parse(appData?._meta?.updatedAt||0);
+    if(ct>lt){appData=cloud;localStorage.setItem("myPortalDataV3",JSON.stringify(appData));render();setSyncStatus("已从云端更新","ok")}
+    else if(lt>ct){await pushCloud(true)}
+    else setSyncStatus("云端已是最新","ok")
+  }catch(e){setSyncStatus("云同步检查失败","warn")}
+}
+function startPolling(){
+  clearInterval(pollTimer); if(!currentUser||!cloudCfg().autoSync)return;
+  pollTimer=setInterval(()=>smartSync(),30000)
+}
+async function openCloudModal(){
+  initSupabase(); await refreshSession(); const c=cloudCfg();
+  if(!c.url||!c.anonKey){
+    openModal(`<h3>云同步设置</h3>
+    <div class="notice">本页面使用 <strong>Supabase</strong> 做私人云同步。你需要先创建一个免费的 Supabase 项目，并把 Project URL 和 anon public key 填到这里。数据库只存你的导航配置。</div>
+    <div class="form-row"><label>Supabase Project URL</label><input class="input" id="sbUrl" value="${esc(c.url||"")}" placeholder="https://xxxx.supabase.co"></div>
+    <div class="form-row"><label>Supabase anon public key</label><textarea class="textarea" id="sbKey" placeholder="eyJ...">${esc(c.anonKey||"")}</textarea></div>
+    <label class="checkbox"><input type="checkbox" id="autoSync" ${c.autoSync!==false?"checked":""}> 登录后自动同步</label>
+    <div class="help">请只填 anon public key，不要把 service_role key 放进网页。</div>
+    <div class="modal-actions"><button class="btn" id="cancelCloud">取消</button><button class="btn primary" id="saveCloud">保存并继续</button></div>`);
+    $("cancelCloud").onclick=closeModal;$("saveCloud").onclick=async()=>{setCloudCfg({url:$("sbUrl").value.trim(),anonKey:$("sbKey").value.trim(),autoSync:$("autoSync").checked});closeModal();initSupabase();await refreshSession();openCloudModal()}
+    return
+  }
+  if(!currentUser){
+    openModal(`<h3>登录云同步</h3><div class="status-box">已配置 Supabase。使用你在这个导航页专用的邮箱和密码登录，同一账号即可在不同电脑同步。</div>
+    <div class="form-row"><label>邮箱</label><input class="input" id="cloudEmail" type="email" placeholder="you@example.com"></div>
+    <div class="form-row"><label>密码</label><input class="input" id="cloudPassword" type="password" placeholder="至少 6 位"></div>
+    <label class="checkbox"><input type="checkbox" id="autoSync" ${c.autoSync!==false?"checked":""}> 登录后自动同步</label>
+    <div class="modal-actions" style="justify-content:space-between"><button class="btn danger" id="resetCloudCfg">重新配置 Supabase</button><div><button class="btn" id="signupBtn">注册</button> <button class="btn primary" id="signinBtn">登录</button></div></div>`);
+    $("resetCloudCfg").onclick=()=>{if(confirm("清除当前 Supabase 配置？")){localStorage.removeItem("portalCloudConfig");sb=null;currentUser=null;closeModal();setSyncStatus("未配置云同步","");updateCloudButton()}};
+    $("signupBtn").onclick=async()=>{const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;setCloudCfg({...c,autoSync:$("autoSync").checked});
+      const {data,error}=await sb.auth.signUp({email,password});if(error)return alert("注册失败："+error.message);
+      if(data.session){currentUser=data.user;alert("注册并登录成功");closeModal();await smartSync();updateCloudButton();startPolling()}
+      else alert("注册成功。若 Supabase 开启了邮箱确认，请先到邮箱完成确认后再登录。")
+    };
+    $("signinBtn").onclick=async()=>{const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;setCloudCfg({...c,autoSync:$("autoSync").checked});
+      const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)return alert("登录失败："+error.message);
+      currentUser=data.user;closeModal();await smartSync();updateCloudButton();startPolling()
+    };
+    return
+  }
+  openModal(`<h3>云同步</h3><div class="status-box">当前账号：<strong>${esc(currentUser.email||"")}</strong><br>最近本地更新时间：${esc(appData?._meta?.updatedAt||"未知")}</div>
+  <label class="checkbox"><input type="checkbox" id="autoSync" ${c.autoSync!==false?"checked":""}> 自动同步（修改后自动上传，并定时检查其他设备更新）</label>
+  <div class="modal-actions" style="justify-content:flex-start"><button class="btn" id="pullBtn">↓ 从云端读取</button><button class="btn" id="pushBtn">↑ 上传当前配置</button><button class="btn" id="syncNowBtn">↻ 智能同步</button></div>
+  <hr class="sep"><div class="modal-actions"><button class="btn danger" id="logoutBtn">退出云账号</button><button class="btn" id="reconfigBtn">重新配置 Supabase</button><button class="btn primary" id="closeCloud">完成</button></div>`);
+  $("autoSync").onchange=()=>{setCloudCfg({...c,autoSync:$("autoSync").checked});startPolling()};
+  $("pullBtn").onclick=()=>pullCloud(false);$("pushBtn").onclick=()=>pushCloud(false);$("syncNowBtn").onclick=()=>smartSync();
+  $("logoutBtn").onclick=async()=>{await sb.auth.signOut();currentUser=null;clearInterval(pollTimer);closeModal();updateCloudButton();setSyncStatus("已退出云账号","")};
+  $("reconfigBtn").onclick=()=>{if(confirm("重新配置 Supabase？")){localStorage.removeItem("portalCloudConfig");sb=null;currentUser=null;clearInterval(pollTimer);closeModal();setSyncStatus("未配置云同步","");updateCloudButton()}};
+  $("closeCloud").onclick=closeModal
+}
+
+$("editBtn").onclick=()=>{editMode=!editMode;render()}; $("addCategoryBtn").onclick=()=>openSectionModal();
+$("backgroundBtn").onclick=openBackgroundModal; $("dataBtn").onclick=openDataModal; $("cloudBtn").onclick=openCloudModal;
+filter.addEventListener("input",()=>{filterText=filter.value;render()});
+document.addEventListener("keydown",e=>{if(e.key==="/"&&document.activeElement!==filter&&!modalBackdrop.classList.contains("show")){e.preventDefault();filter.focus()}if(e.key==="Escape"&&modalBackdrop.classList.contains("show"))closeModal()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&cloudCfg().autoSync)smartSync()});
+window.addEventListener("focus",()=>{if(cloudCfg().autoSync)smartSync()});
+
+const savedTheme=localStorage.getItem("portal-theme"); if(savedTheme==="dark"||(!savedTheme&&matchMedia("(prefers-color-scheme: dark)").matches))document.body.classList.add("dark");
+function syncTheme(){ $("themeBtn").textContent=document.body.classList.contains("dark")?"☀":"☾" }
+$("themeBtn").onclick=()=>{document.body.classList.toggle("dark");localStorage.setItem("portal-theme",document.body.classList.contains("dark")?"dark":"light");syncTheme()}; syncTheme();
+
+(async function boot(){
+  render(); initSupabase(); await refreshSession();
+  if(currentUser&&cloudCfg().autoSync){await smartSync();startPolling()}
+  updateCloudButton()
+})();
+</script>
+</body>
+</html>
