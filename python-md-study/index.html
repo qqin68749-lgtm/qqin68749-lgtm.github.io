@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>博一 Python × MD 学习操作台</title>
+<style>
+:root{--bg:#08111f;--card:#111d31;--card2:#17263e;--text:#edf4ff;--muted:#9caac0;--line:#293b59;--a:#72d5ff;--b:#b59cff;--ok:#78e5aa;--warn:#ffd86f}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(#08111f,#0d1830);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}.wrap{max-width:1180px;margin:auto;padding:20px}.hero,.card{border:1px solid var(--line);background:rgba(17,29,49,.96);border-radius:20px;padding:20px;box-shadow:0 15px 40px #0003}.hero{background:linear-gradient(135deg,#72d5ff20,#b59cff20)}h1{margin:0 0 8px;font-size:clamp(26px,4vw,38px)}h2,h3{margin-top:0}.muted{color:var(--muted)}.tabs{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;padding:12px 0;background:#0d1830e8;z-index:4}.tabbtn,.btn{border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:var(--card2);color:var(--text);cursor:pointer}.tabbtn.on,.btn.primary{background:linear-gradient(90deg,var(--a),var(--b));color:#071320;font-weight:800}.tab{display:none}.tab.on{display:block}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.c4{grid-column:span 4}.c6{grid-column:span 6}.c8{grid-column:span 8}.c12{grid-column:span 12}@media(max-width:800px){.c4,.c6,.c8{grid-column:span 12}}.stat{font-size:28px;font-weight:850}.bar{height:10px;background:#22304a;border-radius:20px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--a),var(--b));width:0}.pill{display:inline-block;border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:4px 8px;font-size:12px;color:var(--muted);margin:2px}.today{border-left:4px solid var(--warn);background:var(--card2);border-radius:12px;padding:14px}.week{border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden}.wh{display:flex;justify-content:space-between;gap:10px;padding:13px;background:#0c1728;cursor:pointer}.wb{display:none;padding:0 13px 13px}.week.open .wb{display:block}.task{display:grid;grid-template-columns:28px 1fr 70px;gap:8px;padding:9px 0;border-top:1px dashed var(--line)}.task input{width:18px;height:18px}.task.done .txt{text-decoration:line-through;color:var(--muted)}input,textarea,select{width:100%;background:#08111f;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}textarea{min-height:105px}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}.res{padding:11px 0;border-top:1px solid var(--line)}a{color:var(--a)}.skill{margin:12px 0}.row{display:flex;justify-content:space-between;gap:10px}.actions{display:flex;gap:8px;flex-wrap:wrap}.small{font-size:12px}.focus{font-size:39px;font-weight:900}pre{white-space:pre-wrap;background:#08111f;border:1px solid var(--line);border-radius:12px;padding:12px}.toast{position:fixed;right:16px;bottom:16px;background:#0e281b;border:1px solid #2e6848;color:#d9ffe8;padding:10px 13px;border-radius:10px;display:none}
+</style>
+</head>
+<body><div class="wrap">
+<div class="hero">
+<h1>博一 Python × MD 学习操作台</h1>
+<div class="muted">为“宽禁带半导体缺陷 + DFT → MD → MLIP”路线设计 · 24 周 · 每周建议 6–8 小时</div>
+<div style="margin-top:12px"><span class="pill" id="pweek">第1周</span><span class="pill" id="pstreak">连续0天</span><span class="pill" id="phours">累计0小时</span></div>
+</div>
+
+<div class="tabs">
+<button class="tabbtn on" data-t="today">今日</button><button class="tabbtn" data-t="plan">24周计划</button>
+<button class="tabbtn" data-t="skills">技能树</button><button class="tabbtn" data-t="resources">资料库</button>
+<button class="tabbtn" data-t="research">博士课题</button><button class="tabbtn" data-t="review">周复盘 / ChatGPT</button>
+</div>
+
+<section id="today" class="tab on"><div class="grid">
+<div class="card c4"><div class="muted">总体完成度</div><div class="stat" id="pct">0%</div><div class="bar"><div class="fill" id="pbar"></div></div></div>
+<div class="card c4"><div class="muted">本周任务</div><div class="stat" id="wcount">0/7</div><div class="muted small" id="wtitle"></div></div>
+<div class="card c4"><div class="muted">本周学习时长</div><div class="stat" id="whours">0h</div><div class="bar"><div class="fill" id="hbar"></div></div></div>
+<div class="card c8"><h2>今天做什么</h2><div class="today" id="todaybox"></div><h3 style="margin-top:18px">本周核心产出</h3><div id="outcome"></div></div>
+<div class="card c4"><h2>学习设置</h2><label>开始日期</label><input id="start" type="date"><label>材料体系</label><input id="system" placeholder="如 GaN / SiC / AlN"><label>博士关键词</label><input id="keywords" placeholder="如 缺陷、扩散、辐照、宽禁带"><label>今天实际学习分钟</label><div class="actions"><input id="mins" type="number" min="1" placeholder="60" style="flex:1"><button class="btn primary" onclick="addMins()">记入</button></div></div>
+</div></section>
+
+<section id="plan" class="tab"><div class="card"><h2>24 周每日计划</h2><p class="muted">每周 7 个任务：输入 → 实操 → 迁移 → 排错 → 产出 → 整理 → 复盘。真正的检查标准是“本周能做出什么”。</p><div id="weeks"></div></div></section>
+
+<section id="skills" class="tab"><div class="grid"><div class="card c8"><h2>技能树</h2><div id="skilllist"></div></div><div class="card c4"><h2>博一结束合格线</h2><p>✓ Python批量处理VASP/LAMMPS</p><p>✓ 独立写并解释LAMMPS input</p><p>✓ 理解NVE/NVT/NPT、PBC、timestep、potential</p><p>✓ 会分析RDF/MSD和结构演化</p><p>✓ 能做势函数、体系尺寸和时间步长检查</p><p>✓ 完成一个缺陷MD小项目</p></div></div></section>
+
+<section id="resources" class="tab"><div class="card"><h2>学习资料库</h2><input id="search" placeholder="搜索 Python / LAMMPS / MLIP..." oninput="renderRes()"><div id="reslist"></div></div></section>
+
+<section id="research" class="tab"><div class="grid">
+<div class="card c6"><h2>博士课题工作台</h2><label>核心科学问题</label><textarea id="q"></textarea><label>当前计算</label><textarea id="calc"></textarea><label>最近里程碑</label><textarea id="mile"></textarea></div>
+<div class="card c6"><h2>方法 → 科学问题</h2><p><b>DFT：</b>缺陷是否稳定、电子结构怎样。</p><p><b>NEB：</b>迁移路径与势垒。</p><p><b>MD：</b>有限温度下的大尺度/长时间演化。</p><p><b>MLIP：</b>尽量保留DFT势能面精度，把尺度做大。</p><p><b>Python/HPC：</b>自动化、批处理、验证与复现。</p><label>目前最缺的能力</label><input id="gap"><label>下一个可展示成果</label><input id="portfolio"></div>
+</div></section>
+
+<section id="review" class="tab"><div class="grid">
+<div class="card c6"><h2>每周复盘</h2><label>本周真正学会了什么</label><textarea id="learned"></textarea><label>最大卡点</label><textarea id="blocked"></textarea><label>下周目标</label><textarea id="next"></textarea><button class="btn primary" onclick="saveReview()">保存复盘</button></div>
+<div class="card c6"><h2>发给 ChatGPT 的进度汇报</h2><pre id="prompt"></pre><div class="actions"><button class="btn primary" onclick="buildPrompt()">刷新</button><button class="btn" onclick="copyPrompt()">复制</button></div></div>
+<div class="card c12"><h2>进度备份</h2><div class="actions"><button class="btn" onclick="exportData()">导出 JSON</button><button class="btn" onclick="document.getElementById('imp').click()">导入 JSON</button><input id="imp" type="file" accept=".json" style="display:none"><button class="btn" onclick="resetAll()">清空数据</button></div><p class="small muted">进度存在当前浏览器 localStorage。换电脑前请导出 JSON；之后也可以把 JSON 发给 ChatGPT 继续跟进。</p></div>
+</div></section>
+</div><div class="toast" id="toast"></div>
+
+<script>
+var W=[
+["Python基础 I","变量、字符串、list/dict、if/for、函数意识","能读懂并修改基础科研脚本。","写一个50–80行脚本，处理一组简单能量数据。","Python基础"],
+["Python基础 II","函数、文件读写、异常处理、pathlib","能批量遍历计算目录并提取文本。","遍历10个VASP目录并读取OUTCAR/OSZICAR。","Python基础,科研自动化"],
+["NumPy","数组、索引、切片、向量化、统计","不用Excel手工处理简单数值数组。","读取能量数据并计算均值、标准差、极值。","NumPy"],
+["pandas + Matplotlib","DataFrame、CSV/Excel、科研绘图","能整理结果并生成规范科研图。","读取CSV并导出一张规范科研图。","数据分析,科研绘图"],
+["VASP自动化 I","目录批处理、OUTCAR/OSZICAR、TOTEN","开始用Python处理自己的真实数据。","自动提取多个目录中的TOTEN。","VASP工作流,科研自动化"],
+["VASP自动化 II","收敛、E-fermi、磁矩、结果汇总","一个脚本可对整批VASP计算体检。","输出results.csv：目录、收敛、TOTEN、E-fermi。","VASP工作流,科研自动化"],
+["pymatgen I","Structure、POSCAR/CONTCAR、超胞","能用代码完成基本结构修改。","读取POSCAR并生成2×2×2超胞。","pymatgen,结构建模"],
+["pymatgen II + ASE","vasprun.xml、ASE Atoms、格式转换","理解pymatgen与ASE的分工。","批量读取5个结构并写出新结构文件。","pymatgen,ASE"],
+["MD理论 I","Newton方程、势能、力、Velocity Verlet、timestep","能解释MD如何推进时间。","手写简化Velocity Verlet程序。","MD理论"],
+["MD理论 II","PBC、cutoff、neighbor、NVE/NVT/NPT","能解释常见MD设置的物理意义。","写一页系综与PBC说明。","MD理论"],
+["LAMMPS入门 I","input、units、atom_style、region、create_atoms","能从零建立最简体系。","从零写一个LAMMPS input并运行。","LAMMPS"],
+["LAMMPS入门 II","pair_style、minimize、thermo、dump","能完成优化和轨迹输出。","完成minimize + thermo + dump。","LAMMPS"],
+["NVE / NVT / NPT","thermostat、barostat、equilibration","会根据问题选择系综并判断平衡。","比较同一体系NVE/NVT/NPT的T/P/V/E。","MD理论,LAMMPS"],
+["简单固体：Al","EAM、0K优化、300K NPT、晶格常数","完成第一个规范固体MD小项目。","FCC Al：minimize→300K NPT→晶格常数。","LAMMPS,势函数"],
+["轨迹分析 I","OVITO、RDF、配位数、结构可视化","会从轨迹中看结构。","导出一张结构图和RDF。","OVITO,轨迹分析"],
+["轨迹分析 II","MSD、扩散系数、Arrhenius基础","能提取简单动力学量。","计算MSD并估算扩散系数。","轨迹分析,Python科研"],
+["缺陷体系 I","空位/间隙、超胞、有限尺寸","把MD接到博士缺陷方向。","构建空位体系并与完美晶体对比。","缺陷物理,LAMMPS"],
+["缺陷体系 II","温度效应、缺陷附近结构演化","观察有限温度下缺陷结构变化。","比较300/600/900/1200K。","缺陷物理,MD应用"],
+["可靠性验证","timestep、尺寸、势函数、重复采样","开始判断MD结果是否可信。","完成timestep和体系尺寸敏感性测试。","科研规范,势函数"],
+["Python + LAMMPS","批量参数、自动输入、结果汇总","Python成为MD工作流胶水。","自动生成多温度input并汇总结果。","科研自动化,LAMMPS"],
+["综合项目 I","Si空位：建模、势函数、预平衡","形成完整可复现实验设置。","完成Si空位建模、参数表和预平衡。","综合项目,缺陷物理"],
+["综合项目 II","多温度production、RDF、MSD","拿到完整可分析数据。","完成4个温度production与分析。","综合项目,轨迹分析"],
+["综合项目 III","误差、结果图、结论、组会表达","完成像小论文一样的组会汇报。","完成T/E、RDF、MSD、结构图和8–10页汇报。","综合项目,科研表达"],
+["MLIP预备","DFT数据→训练→验证→MD；DeepMD/MACE/NequIP","知道博二进入MLIP从哪里开始。","写一页自己的MLIP路线。","MLIP预备"]
+];
+var D=[
+["学习","阅读本周核心教程30–45分钟，整理至少5条关键笔记。",45],
+["实操","跟着教程实际敲代码/命令，不整段复制；主动改3个参数。",60],
+["迁移","把本周知识迁移到自己的科研数据或材料小例子。",60],
+["排错","故意制造一个小错误并定位原因，记录报错和解决办法。",45],
+["产出","完成本周核心任务第一版，保存为可复用脚本/input/图表。",75],
+["整理","清理文件夹、补注释，写5–10句学会/不会的内容。",45],
+["复盘","核对完成度、统计时长、生成ChatGPT跟进文本。",30]
+];
+var R=[
+["MolSSI Python Scripting","https://education.molssi.org/python_scripting_cms/","Python","面向计算化学/材料的科研Python入门"],
+["Python官方教程","https://docs.python.org/3/tutorial/","Python","查语法和基础概念"],
+["NumPy Absolute Basics","https://numpy.org/doc/stable/user/absolute_beginners.html","数据","数组、索引、统计与向量化"],
+["pandas Getting Started","https://pandas.pydata.org/docs/getting_started/index.html","数据","CSV/Excel与表格处理"],
+["Matplotlib Quick Start","https://matplotlib.org/stable/users/explain/quick_start.html","绘图","科研绘图基础"],
+["pymatgen Usage","https://pymatgen.org/usage.html","材料工具","结构与VASP输入输出"],
+["ASE","https://ase-lib.org/","材料工具","结构、MD和MLIP接口"],
+["MolSSI MD","https://education.molssi.org/ab-initio-md/","MD","理解积分与MD基础"],
+["LAMMPS Tutorials","https://lammpstutorials.github.io/","LAMMPS","从零开始的LAMMPS教程"],
+["LAMMPS官方文档","https://docs.lammps.org/stable/","LAMMPS","正式研究时的第一查阅来源"],
+["LAMMPS Beginner Workshop","https://www.lammps.org/workshops/Aug23/","LAMMPS","MD、OVITO和势函数一体化"],
+["OVITO","https://www.ovito.org/","可视化","轨迹和缺陷可视化"],
+["OpenKIM","https://openkim.org/","势函数","查找与验证原子势"],
+["NIST Potentials","https://www.ctcms.nist.gov/potentials/","势函数","经典原子势资源"],
+["DeepMD-kit","https://docs.deepmodeling.com/projects/deepmd/en/master/","MLIP","后续MLIP路线"],
+["MACE","https://mace-docs.readthedocs.io/","MLIP","现代等变机器学习原子势"],
+["NequIP","https://nequip.readthedocs.io/","MLIP","等变图神经网络原子势"]
+];
+var K="phd_python_md_online_v21";
+function def(){return{start:new Date().toISOString().slice(0,10),system:"",keywords:"",done:{},mins:{},review:{},research:{q:"",calc:"",mile:"",gap:"",portfolio:""}}}
+var S;try{S=JSON.parse(localStorage.getItem(K))||def()}catch(e){S=def()}
+function save(){localStorage.setItem(K,JSON.stringify(S));render()}
+function ds(d){var x=new Date(d);x.setHours(0,0,0,0);return x.toISOString().slice(0,10)}
+function pos(){var a=new Date(S.start+"T00:00:00"),b=new Date();b.setHours(0,0,0,0);var n=Math.floor((b-a)/86400000);return{w:Math.max(0,Math.min(23,Math.floor(Math.max(0,n)/7))),d:Math.max(0,Math.min(6,((n%7)+7)%7))}}
+function dateOf(w,d){var x=new Date(S.start+"T00:00:00");x.setDate(x.getDate()+w*7+d);return ds(x)}
+function id(w,d){return"w"+w+"d"+d}
+function doneN(){return Object.values(S.done).filter(Boolean).length}
+function weekStat(w){var n=0,m=0;for(var d=0;d<7;d++){if(S.done[id(w,d)])n++;m+=Number(S.mins[dateOf(w,d)]||0)}return{n:n,m:m}}
+function totalM(){return Object.values(S.mins).reduce(function(a,b){return a+Number(b||0)},0)}
+function activeDay(x){var a=Number(S.mins[x]||0)>0;for(var w=0;w<24;w++)for(var d=0;d<7;d++)if(dateOf(w,d)==x&&S.done[id(w,d)])a=true;return a}
+function streak(){var n=0,x=new Date();x.setHours(0,0,0,0);if(!activeDay(ds(x)))x.setDate(x.getDate()-1);while(activeDay(ds(x))){n++;x.setDate(x.getDate()-1)}return n}
+function toast(t){var e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(function(){e.style.display="none"},1600)}
+function renderToday(){var p=pos(),w=W[p.w],st=weekStat(p.w),pc=Math.round(doneN()/168*100);document.getElementById("pct").textContent=pc+"%";document.getElementById("pbar").style.width=pc+"%";document.getElementById("wcount").textContent=st.n+"/7";document.getElementById("wtitle").textContent="第"+(p.w+1)+"周 · "+w[0];document.getElementById("whours").textContent=(st.m/60).toFixed(1)+"h";document.getElementById("hbar").style.width=Math.min(100,Math.round(st.m/420*100))+"%";document.getElementById("pweek").textContent="第"+(p.w+1)+"周 · "+w[0];document.getElementById("pstreak").textContent="连续"+streak()+"天";document.getElementById("phours").textContent="累计"+(totalM()/60).toFixed(1)+"小时";var t=D[p.d],checked=S.done[id(p.w,p.d)]?"checked":"";document.getElementById("todaybox").innerHTML='<span class="pill">'+dateOf(p.w,p.d)+' · '+t[0]+'</span><h3 style="margin:9px 0">'+t[1]+'</h3><div class="muted">建议 '+t[2]+' 分钟</div><label style="color:var(--text)"><input id="tc" type="checkbox" style="width:18px" '+checked+'> 完成今天任务</label>';document.getElementById("tc").onchange=function(e){S.done[id(p.w,p.d)]=e.target.checked;save()};document.getElementById("outcome").innerHTML="<p><b>"+w[2]+"</b></p><p>"+w[3]+"</p>"+w[4].split(",").map(function(x){return'<span class="pill">'+x+"</span>"}).join("")}
+function renderWeeks(){var p=pos(),root=document.getElementById("weeks");root.innerHTML="";W.forEach(function(w,wi){var st=weekStat(wi),box=document.createElement("div");box.className="week"+(wi==p.w?" open":"");box.innerHTML='<div class="wh"><div><b>第'+(wi+1)+"周 · "+w[0]+'</b><div class="small muted">'+w[1]+'</div></div><span class="pill">'+st.n+"/7 · "+(st.m/60).toFixed(1)+'h</span></div><div class="wb"><p><b>达成标准：</b>'+w[2]+'</p><p><b>本周产出：</b>'+w[3]+'</p><div class="list"></div></div>';box.querySelector(".wh").onclick=function(){box.classList.toggle("open")};D.forEach(function(t,di){var r=document.createElement("div"),x=id(wi,di);r.className="task"+(S.done[x]?" done":"");r.innerHTML='<input type="checkbox" '+(S.done[x]?"checked":"")+'><div class="txt"><b>Day '+(di+1)+" · "+t[0]+'</b> <span class="small muted">'+dateOf(wi,di)+"</span><br>"+t[1]+'</div><span class="pill">'+t[2]+" min</span>";r.querySelector("input").onchange=function(e){S.done[x]=e.target.checked;save()};box.querySelector(".list").appendChild(r)});root.appendChild(box)})}
+function renderSkills(){var names=["Python基础","科研自动化","VASP工作流","pymatgen","ASE","MD理论","LAMMPS","OVITO","轨迹分析","缺陷物理","综合项目","MLIP预备"];document.getElementById("skilllist").innerHTML=names.map(function(n){var ws=[];W.forEach(function(w,i){if(w[4].indexOf(n)>=0)ws.push(i)});var tot=ws.length*7,dn=0;ws.forEach(function(w){for(var d=0;d<7;d++)if(S.done[id(w,d)])dn++});var pc=tot?Math.round(dn/tot*100):0;return'<div class="skill"><div class="row"><b>'+n+'</b><b>'+pc+'%</b></div><div class="bar"><div class="fill" style="width:'+pc+'%"></div></div></div>'}).join("")}
+function renderRes(){var q=(document.getElementById("search").value||"").toLowerCase();document.getElementById("reslist").innerHTML=R.filter(function(r){return !q||(r.join(" ").toLowerCase().indexOf(q)>=0)}).map(function(r){return'<div class="res"><h3 style="margin-bottom:5px"><a target="_blank" rel="noopener" href="'+r[1]+'">'+r[0]+'</a></h3><span class="pill">'+r[2]+'</span><div class="muted" style="margin-top:6px">'+r[3]+"</div></div>"}).join("")}
+function addMins(){var v=Number(document.getElementById("mins").value||0);if(v<=0)return toast("请输入分钟数");var d=ds(new Date());S.mins[d]=Number(S.mins[d]||0)+v;document.getElementById("mins").value="";save();toast("已记录 "+v+" 分钟")}
+function saveReview(){var p=pos();S.review[p.w]={learned:learned.value,blocked:blocked.value,next:next.value};localStorage.setItem(K,JSON.stringify(S));buildPrompt();toast("复盘已保存")}
+function loadReview(){var r=S.review[pos().w]||{};learned.value=r.learned||"";blocked.value=r.blocked||"";next.value=r.next||""}
+function buildPrompt(){var p=pos(),w=W[p.w],st=weekStat(p.w),r=S.review[p.w]||{};var t="我正在执行“Python × MD 24周学习计划”，请继续作为我的学习监督和科研训练助手。\n\n当前：第"+(p.w+1)+"周 · "+w[0]+"\n材料体系："+(S.system||"未填写")+"\n研究关键词："+(S.keywords||"未填写")+"\n本周任务："+st.n+"/7\n本周时长："+(st.m/60).toFixed(1)+"h\n总体完成度："+Math.round(doneN()/168*100)+"%\n连续学习："+streak()+"天\n\n本周学会："+(r.learned||"暂无")+"\n主要卡点："+(r.blocked||"暂无")+"\n下周目标："+(r.next||"暂无")+"\n\n博士科学问题："+(S.research.q||"未填写")+"\n目前计算："+(S.research.calc||"未填写")+"\n最近里程碑："+(S.research.mile||"未填写")+"\n\n请：1）判断本周是否达标；2）指出需要补的知识；3）给下周3个最高优先级任务；4）必要时调整后续计划；5）尽量和我的真实博士课题连接。";prompt.textContent=t;return t}
+function copyPrompt(){navigator.clipboard.writeText(buildPrompt()).then(function(){toast("已复制")})}
+function download(n,c){var a=document.createElement("a"),b=new Blob([c],{type:"application/json"});a.href=URL.createObjectURL(b);a.download=n;a.click()}
+function exportData(){download("python_md_progress.json",JSON.stringify(S,null,2))}
+imp.onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{S=JSON.parse(r.result);localStorage.setItem(K,JSON.stringify(S));location.reload()}catch(e){toast("JSON格式错误")}};r.readAsText(f)}
+function resetAll(){if(confirm("确定清空全部学习数据？")){localStorage.removeItem(K);location.reload()}}
+function bind(){start.value=S.start;system.value=S.system;keywords.value=S.keywords;start.onchange=function(){S.start=this.value;save()};system.oninput=function(){S.system=this.value;localStorage.setItem(K,JSON.stringify(S))};keywords.oninput=function(){S.keywords=this.value;localStorage.setItem(K,JSON.stringify(S))};["q","calc","mile","gap","portfolio"].forEach(function(k){document.getElementById(k).value=S.research[k]||"";document.getElementById(k).oninput=function(){S.research[k]=this.value;localStorage.setItem(K,JSON.stringify(S))}})}
+document.querySelectorAll(".tabbtn").forEach(function(b){b.onclick=function(){document.querySelectorAll(".tabbtn").forEach(function(x){x.classList.remove("on")});document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("on")});b.classList.add("on");document.getElementById(b.dataset.t).classList.add("on")}})
+function render(){renderToday();renderWeeks();renderSkills();renderRes();loadReview();buildPrompt()}
+bind();render();
+</script></body></html>
