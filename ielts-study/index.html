@@ -61,12 +61,17 @@ textarea{min-height:92px;resize:vertical}
       <div class="eyebrow">PERSONAL STUDY DASHBOARD · 2026—2028</div>
       <h1>IELTS Academic 7.0 学习操作台</h1>
       <p class="muted">52 周逐日计划 · 每天 60–90 分钟 · 听说读写 + 课程视频 + 阶段复盘</p>
-      <div><span class="pill">正式开始：2026.10.19</span><span class="pill">目标：Overall 7.0</span><span class="pill">未考过雅思：先建立基线</span></div>
+      <div><span class="pill" id="startBadge">正式开始：2026.10.26</span><span class="pill">目标：Overall 7.0</span><span class="pill">未考过雅思：先建立基线</span></div>
     </div>
     <div class="actions">
       <a class="btn" href="../python-md-study/" target="_blank" rel="noopener">打开 Python × MD 站点 ↗</a>
       <button class="btn" onclick="exportData()">备份进度 ↓</button>
     </div>
+  </div>
+  <div class="dateControls" style="margin-top:16px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#0b1728">
+    <label for="startDateInput" style="margin-top:0">计划开始日期（可选择任意日期）</label>
+    <div class="actions"><input type="date" id="startDateInput" value="2026-10-26" style="max-width:220px"><button class="btn primary" onclick="applyStartDate()">应用开始日期</button></div>
+    <p class="small muted" style="margin-bottom:0">更改后，52 周的日期、当前周和阶段复盘节点会自动重排。已有打卡按原周序号保留，不会自动删除。</p>
   </div>
   <p class="small muted" style="margin-top:14px">提示：完成情况保存在当前浏览器中（localStorage）。换浏览器或清除网站数据前，请先导出备份。视频链接沿用你提供的计划，个别课程可能因转载或下架而失效。</p>
 </header>
@@ -259,7 +264,7 @@ var readingFocus = [
 var writingFocus = [
 "句子基本结构","句子基本结构","句子基本结构","观点 + 原因 + 例子","观点 + 原因 + 例子","观点 + 原因 + 例子","开头段与改写题目","开头段与改写题目","开头段与改写题目","主体段 PEEL","主体段 PEEL","主体段 PEEL","结论段","结论段","结论段","同意与否","同意与否","同意与否","双边讨论","双边讨论","双边讨论","问题解决","问题解决","问题解决","Task 1 折线图","Task 1 折线图","Task 1 折线图","Task 1 柱状图","Task 1 柱状图","Task 1 柱状图","Task 1 饼图","Task 1 饼图","Task 1 饼图","Task 1 表格","Task 1 表格","Task 1 表格","Task 1 流程图","Task 1 流程图","Task 1 流程图","Task 1 地图题","Task 1 地图题","Task 1 地图题","句子基本结构","句子基本结构","句子基本结构","观点 + 原因 + 例子","观点 + 原因 + 例子","观点 + 原因 + 例子","开头段与改写题目","开头段与改写题目","开头段与改写题目","主体段 PEEL"
 ];
-var dayNames = ["周一","周二","周三","周四","周五","周六","周日"];
+var weekdayNames = ["周日","周一","周二","周三","周四","周五","周六"];
 var daySkills = ["听力","口语","阅读","听力","写作","综合","周测"];
 var milestones = [1,4,8,12,16,20,24,28,32,36,40,44,48,52];
 
@@ -267,8 +272,19 @@ function formatDate(d, year){
  var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
  return year ? y+"."+m+"."+day : m+"."+day;
 }
+function getStartDateValue(){return (typeof state!=="undefined" && state && state.startDate) || DEFAULT_START_DATE;}
+function getStartDate(){
+ var p=getStartDateValue().split("-").map(Number);
+ return new Date(p[0],p[1]-1,p[2]);
+}
+function planDate(w,d){var start=getStartDate();return new Date(start.getFullYear(),start.getMonth(),start.getDate()+(w-1)*7+d);}
+function planDayLabel(w,d){var dt=planDate(w,d);return weekdayNames[dt.getDay()]+" · "+formatDate(dt,false);}
+function isBeforeStart(){
+ var now=new Date(),start=getStartDate();
+ return Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()) < Date.UTC(start.getFullYear(),start.getMonth(),start.getDate());
+}
 function dateRange(n){
- var s=new Date(2026,9,19+(n-1)*7),e=new Date(s.getFullYear(),s.getMonth(),s.getDate()+6);
+ var s=planDate(n,0),e=planDate(n,6);
  if(s.getFullYear()===e.getFullYear() && s.getMonth()===e.getMonth()) return formatDate(s,true)+"—"+formatDate(e,false);
  if(s.getFullYear()===e.getFullYear()) return formatDate(s,true)+"—"+formatDate(e,false);
  return formatDate(s,true)+"—"+formatDate(e,true);
@@ -283,9 +299,10 @@ function makeWeeks(){
   return {n:n,range:dateRange(n),phase:phaseFor(n),listen:listeningFocus[i],speak:speakingTopics[i],read:readingFocus[i],readCourse:readCourseFor(n),write:writingFocus[i],writeCourse:writeCourseFor(n),milestone:milestone};
  });
 }
-var weeks=makeWeeks();
+var weeks=[];
+var DEFAULT_START_DATE = "2026-10-26";
 function initialState(){
- return {full:{},low:{},minutes:{},reviews:{},lowMode:false,selectedWeek:currentWeek(),reviewWeek:defaultReviewWeek(),duration:75};
+ return {startDate:DEFAULT_START_DATE,full:{},low:{},minutes:{},reviews:{},lowMode:false,selectedWeek:currentWeek(),reviewWeek:defaultReviewWeek(),duration:75};
 }
 function loadState(){
  try{var raw=localStorage.getItem(STORE_KEY);if(!raw)return initialState();var x=JSON.parse(raw);return Object.assign(initialState(),x||{});}catch(e){return initialState();}
@@ -295,15 +312,25 @@ function localDateKey(d){
  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
 function currentWeek(){
- var now=new Date(),todayUtc=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()),startUtc=Date.UTC(2026,9,19);
- return Math.floor((todayUtc-startUtc)/604800000)+1;
+ var now=new Date(),start=getStartDate();
+ var todayUtc=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+ var startUtc=Date.UTC(start.getFullYear(),start.getMonth(),start.getDate());
+ return clampWeek(Math.floor((todayUtc-startUtc)/604800000)+1);
 }
-function currentDay(){return (new Date().getDay()+6)%7;}
+function currentDay(){
+ var now=new Date(),start=getStartDate();
+ var todayUtc=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+ var startUtc=Date.UTC(start.getFullYear(),start.getMonth(),start.getDate());
+ var elapsed=Math.floor((todayUtc-startUtc)/86400000);
+ if(elapsed<0)return 0;
+ return Math.min(363,elapsed)%7;
+}
 function clampWeek(n){return Math.max(1,Math.min(52,Number(n)||1));}
 function defaultReviewWeek(){
  var w=currentWeek(),available=milestones.filter(function(m){return m<=w;});return available.length?available[available.length-1]:1;
 }
 var state=loadState();
+weeks=makeWeeks();
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 function courseForListening(n){return n<=6?"L0 语音/连读":n<=12?"L1 连读弱读 + L2 对应技巧":n<=14?"L2 对应题型或剑雅音频":"L2 对应题型或剑雅音频";}
 function taskText(w,i){
@@ -322,6 +349,19 @@ function timeBreakdown(mins){
 }
 function keyFor(w,d){return w+"-"+d;}
 function isDayDone(w,d){var k=keyFor(w,d);return !!(state.full[k]||state.low[k]);}
+function renderStartDateUI(){
+ var input=document.getElementById("startDateInput");if(input)input.value=getStartDateValue();
+ var badge=document.getElementById("startBadge");if(badge)badge.textContent="正式开始："+formatDate(getStartDate(),true);
+}
+function applyStartDate(){
+ var input=document.getElementById("startDateInput"),value=input.value;
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)){toast("请选择有效的开始日期");return;}
+ var p=value.split("-").map(Number),check=new Date(p[0],p[1]-1,p[2]);
+ if(check.getFullYear()!==p[0]||check.getMonth()!==p[1]-1||check.getDate()!==p[2]){toast("日期无效，请重新选择");return;}
+ state.startDate=value;state.selectedWeek=currentWeek();state.reviewWeek=defaultReviewWeek();weeks=makeWeeks();
+ saveState();fillWeekSelect();renderStartDateUI();renderAll();loadReview();
+ toast("开始日期已更新；已有打卡按周序号保留");
+}
 function renderStats(){
  var done=0,total=364,mins=0;
  for(var w=1;w<=52;w++)for(var d=0;d<7;d++)if(isDayDone(w,d))done++;
@@ -349,7 +389,9 @@ function renderToday(){
  var low=!!state.lowMode, k=keyFor(w.n,di);
  var fullDone=!!state.full[k],lowDone=!!state.low[k];
  var text=low?"今天只做 15 分钟保底任务：任选一项——复习词汇；精听 30–60 秒并记下一个漏听点；回答 2 道口语题并录音；阅读一段并圈出原文证据。":taskText(w,di);
- document.getElementById("todayTask").innerHTML="<div class='phase'>第 "+w.n+" 周 · "+esc(w.phase)+" · "+esc(w.range)+"</div><h3 style='margin-top:7px'>"+esc(dayNames[di])+"｜"+esc(daySkills[di])+"</h3><p>"+esc(text)+"</p>"+(w.milestone?"<p class='small warn'>阶段提醒："+esc(w.milestone)+"</p>":"")+"<label class='toggleline'><input type='checkbox' id='todayCheck' "+((low?lowDone:fullDone)?"checked":"")+" onchange='"+(low?"toggleTodayLow()":"toggleTodayDone()")+"' > "+(low?"我完成了今天的保底任务":"我完成了今天的标准任务")+"</label>";
+ var preStart=isBeforeStart();
+ var preStartNote=preStart?"<p class='small warn'>计划尚未开始：正式开始日期为 "+esc(formatDate(getStartDate(),true))+"。当前展示的是第 1 天预览任务。</p>":"";
+ document.getElementById("todayTask").innerHTML="<div class='phase'>第 "+w.n+" 周 · "+esc(w.phase)+" · "+esc(w.range)+"</div><h3 style='margin-top:7px'>"+esc(planDayLabel(w.n,di))+"｜"+esc(daySkills[di])+"</h3>"+preStartNote+"<p>"+esc(text)+"</p>"+(w.milestone?"<p class='small warn'>阶段提醒："+esc(w.milestone)+"</p>":"")+"<label class='toggleline'><input type='checkbox' id='todayCheck' "+((low?lowDone:fullDone)?"checked":"")+" onchange='"+(low?"toggleTodayLow()":"toggleTodayDone()")+"' > "+(low?"我完成了今天的保底任务":"我完成了今天的标准任务")+"</label>";
  document.getElementById("lowPanel").classList.toggle("hide",!low);
  document.getElementById("timeBreakdown").innerHTML="<b>"+(low?"低谷期：不追求完整时长":"建议时长："+Number(state.duration||75)+" 分钟")+"</b><p class='small muted'>"+esc(low?"最低完成标准：15 分钟左右的一项小任务；今天不需要补课或熬夜。":timeBreakdown(Number(state.duration||75)))+"</p>";
  document.getElementById("weeklyFocus").innerHTML="<div class='pill'>听力："+esc(w.listen)+"</div><div class='pill'>口语："+esc(w.speak)+"</div><div class='pill'>阅读："+esc(w.read)+"</div><div class='pill'>写作："+esc(w.write)+"</div>";
@@ -366,12 +408,12 @@ function fillWeekSelect(){
 function renderWeek(){
  var n=clampWeek(state.selectedWeek||currentWeek()),w=weeks[n-1];
  document.getElementById("weekSelect").value=String(n);
- var html="<div class='weekhead'><div><div class='phase'>"+esc(w.phase)+"</div><h2>第 "+n+" 周 · "+esc(w.range)+"</h2><div class='small muted'>每周安排：周一听力、周二口语、周三阅读、周四听力、周五写作、周六综合、周日周测。</div></div><div><span class='pill'>听力："+esc(w.listen)+"</span><span class='pill'>口语："+esc(w.speak)+"</span></div></div>";
+ var html="<div class='weekhead'><div><div class='phase'>"+esc(w.phase)+"</div><h2>第 "+n+" 周 · "+esc(w.range)+"</h2><div class='small muted'>按开始日期依次安排：第 1 天听力、第 2 天口语、第 3 天阅读、第 4 天听力、第 5 天写作、第 6 天综合、第 7 天周测；不要求从周一开始。</div></div><div><span class='pill'>听力："+esc(w.listen)+"</span><span class='pill'>口语："+esc(w.speak)+"</span></div></div>";
  html+="<div class='note'><b>本周重点</b><p class='small'>阅读： "+esc(w.read)+" · 写作： "+esc(w.write)+"</p><p class='small muted'>阅读课程： "+esc(w.readCourse)+"；写作课程： "+esc(w.writeCourse)+"。视频时长包含在每日总时长内。</p></div>";
  if(w.milestone)html+="<div class='note' style='margin-top:10px;border-color:#76643a'><b class='warn'>阶段检查</b><p class='small'>"+esc(w.milestone)+"</p><button class='btn' onclick='openReview("+n+")'>填写本阶段复盘</button></div>";
  for(var d=0;d<7;d++){
   var k=keyFor(n,d),full=!!state.full[k],low=!!state.low[k];
-  html+="<div class='taskline "+(full?"done":"")+"'><div class='tasktop'><input type='checkbox' class='fullCheck' data-key='"+k+"' "+(full?"checked":"")+" aria-label='标准任务完成'><div><div class='tasktitle'>"+esc(dayNames[d])+" · "+esc(daySkills[d])+"</div><p class='tasktext'>"+esc(taskText(w,d))+"</p></div></div><div class='taskfoot'><span class='small muted'>保底：任选一项 15 分钟小任务，不追求补齐整天计划。</span><label class='lowcheck'><input type='checkbox' class='lowCheck' data-key='"+k+"' "+(low?"checked":"")+"> 低谷保底完成</label></div></div>";
+  html+="<div class='taskline "+(full?"done":"")+"'><div class='tasktop'><input type='checkbox' class='fullCheck' data-key='"+k+"' "+(full?"checked":"")+" aria-label='标准任务完成'><div><div class='tasktitle'>"+esc(planDayLabel(n,d))+" · "+esc(daySkills[d])+"</div><p class='tasktext'>"+esc(taskText(w,d))+"</p></div></div><div class='taskfoot'><span class='small muted'>保底：任选一项 15 分钟小任务，不追求补齐整天计划。</span><label class='lowcheck'><input type='checkbox' class='lowCheck' data-key='"+k+"' "+(low?"checked":"")+"> 低谷保底完成</label></div></div>";
  }
  document.getElementById("weekDetail").innerHTML=html;
  renderStats();
@@ -436,7 +478,7 @@ function renderMilestones(){
 }
 function renderPrompt(){
  var w=weeks[clampWeek(currentWeek())-1],done=[];
- for(var d=0;d<7;d++)if(isDayDone(w.n,d))done.push(dayNames[d]);
+ for(var d=0;d<7;d++)if(isDayDone(w.n,d))done.push(planDayLabel(w.n,d));
  var text="我的 IELTS Academic 7.0 学习进度：\n当前计划周：第 "+w.n+" 周（"+w.range+"）\n本周重点：听力 "+w.listen+"；口语 "+w.speak+"；阅读 "+w.read+"；写作 "+w.write+"\n本周已完成/保底： "+(done.join("、")||"尚未记录")+"\n累计记录学习时间： "+Object.values(state.minutes).reduce(function(a,b){return a+(Number(b)||0)},0)+" 分钟\n请根据这些记录帮我复盘，不要把单次练习直接换算成官方 Band。";
  document.getElementById("promptText").textContent=text;
 }
@@ -453,14 +495,14 @@ function exportData(){
 function importData(ev){
  var f=ev.target.files&&ev.target.files[0];if(!f)return;
  var reader=new FileReader();reader.onload=function(){
-  try{var x=JSON.parse(reader.result);if(!x||typeof x!=="object")throw new Error("invalid");state=Object.assign(initialState(),x);saveState();fillWeekSelect();renderAll();loadReview();toast("进度已导入");}
+  try{var x=JSON.parse(reader.result);if(!x||typeof x!=="object")throw new Error("invalid");state=Object.assign(initialState(),x);weeks=makeWeeks();saveState();fillWeekSelect();renderStartDateUI();renderAll();loadReview();toast("进度已导入");}
   catch(e){toast("文件无法识别，请选择本网站导出的 JSON");}
   ev.target.value="";
  };reader.readAsText(f);
 }
 function resetData(){
  if(!confirm("确定清空当前浏览器中的雅思进度和复盘记录吗？建议先导出备份。"))return;
- localStorage.removeItem(STORE_KEY);state=initialState();fillWeekSelect();renderAll();loadReview();toast("本机进度已清空");
+ localStorage.removeItem(STORE_KEY);state=initialState();weeks=makeWeeks();fillWeekSelect();renderStartDateUI();renderAll();loadReview();toast("本机进度已清空");
 }
 function copyText(text){
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){toast("链接已复制");}).catch(function(){window.prompt("请复制链接：",text);});
@@ -487,7 +529,7 @@ document.addEventListener("change",function(e){
 document.getElementById("duration").addEventListener("change",function(){state.duration=Number(this.value);saveState();renderToday();});
 document.getElementById("importFile").addEventListener("click",function(){this.value="";});
 function renderAll(){renderStats();renderToday();renderWeek();renderCourses();renderMilestones();renderPrompt();}
-fillWeekSelect();
+fillWeekSelect();renderStartDateUI();
 if(!state.selectedWeek||state.selectedWeek<1||state.selectedWeek>52)state.selectedWeek=clampWeek(currentWeek());
 renderAll();loadReview();
 </script>
