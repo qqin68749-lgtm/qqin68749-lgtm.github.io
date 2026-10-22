@@ -187,6 +187,11 @@ textarea{min-height:92px;resize:vertical}
       <div class="actions"><button class="btn" onclick="exportData()">导出 JSON 备份</button><button class="btn" onclick="document.getElementById('importFile').click()">导入 JSON 备份</button><button class="btn" onclick="resetData()">清空本机进度</button><input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importData(event)"></div>
       <p class="small muted">数据只保存在当前浏览器。导出 JSON 后可自行保存；导入会覆盖当前网站的本地进度。</p>
     </div>
+    <div class="card c12">
+      <div class="row"><h2>复制本周进度给 ChatGPT</h2><button class="btn primary" onclick="copyProgressPrompt()">复制进度摘要</button></div>
+      <pre id="promptText" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+      <p class="small muted">复制后可以直接发给 ChatGPT，让我根据已完成任务、当前薄弱点和复盘记录帮你调整下一周安排。</p>
+    </div>
   </div>
 </section>
 
@@ -296,7 +301,7 @@ function currentWeek(){
 function currentDay(){return (new Date().getDay()+6)%7;}
 function clampWeek(n){return Math.max(1,Math.min(52,Number(n)||1));}
 function defaultReviewWeek(){
- var w=currentWeek();if(w<=1)return 1;return Math.min(52,Math.max(4,Math.floor(w/4)*4));
+ var w=currentWeek(),available=milestones.filter(function(m){return m<=w;});return available.length?available[available.length-1]:1;
 }
 var state=loadState();
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
@@ -434,6 +439,11 @@ function renderPrompt(){
  for(var d=0;d<7;d++)if(isDayDone(w.n,d))done.push(dayNames[d]);
  var text="我的 IELTS Academic 7.0 学习进度：\n当前计划周：第 "+w.n+" 周（"+w.range+"）\n本周重点：听力 "+w.listen+"；口语 "+w.speak+"；阅读 "+w.read+"；写作 "+w.write+"\n本周已完成/保底： "+(done.join("、")||"尚未记录")+"\n累计记录学习时间： "+Object.values(state.minutes).reduce(function(a,b){return a+(Number(b)||0)},0)+" 分钟\n请根据这些记录帮我复盘，不要把单次练习直接换算成官方 Band。";
  document.getElementById("promptText").textContent=text;
+}
+function copyProgressPrompt(){
+ var text=document.getElementById("promptText").textContent;
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){toast("进度摘要已复制");}).catch(function(){window.prompt("请复制进度摘要：",text);});
+ else window.prompt("请复制进度摘要：",text);
 }
 function exportData(){
  var blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
