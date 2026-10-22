@@ -302,7 +302,10 @@ function makeWeeks(){
 var weeks=[];
 var DEFAULT_START_DATE = "2026-10-26";
 function initialState(){
- return {startDate:DEFAULT_START_DATE,full:{},low:{},minutes:{},reviews:{},lowMode:false,selectedWeek:currentWeek(),reviewWeek:defaultReviewWeek(),duration:75};
+ var now=new Date(),parts=DEFAULT_START_DATE.split("-").map(Number);
+ var todayUtc=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()),startUtc=Date.UTC(parts[0],parts[1]-1,parts[2]);
+ var w=clampWeek(Math.floor((todayUtc-startUtc)/604800000)+1),available=milestones.filter(function(m){return m<=w;});
+ return {startDate:DEFAULT_START_DATE,full:{},low:{},minutes:{},reviews:{},lowMode:false,selectedWeek:w,reviewWeek:available.length?available[available.length-1]:1,duration:75};
 }
 function loadState(){
  try{var raw=localStorage.getItem(STORE_KEY);if(!raw)return initialState();var x=JSON.parse(raw);return Object.assign(initialState(),x||{});}catch(e){return initialState();}
@@ -355,7 +358,7 @@ function renderStartDateUI(){
 }
 function applyStartDate(){
  var input=document.getElementById("startDateInput"),value=input.value;
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)){toast("请选择有效的开始日期");return;}
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(value)){toast("请选择有效的开始日期");return;}
  var p=value.split("-").map(Number),check=new Date(p[0],p[1]-1,p[2]);
  if(check.getFullYear()!==p[0]||check.getMonth()!==p[1]-1||check.getDate()!==p[2]){toast("日期无效，请重新选择");return;}
  state.startDate=value;state.selectedWeek=currentWeek();state.reviewWeek=defaultReviewWeek();weeks=makeWeeks();
