@@ -478,12 +478,12 @@ async function openCloudModal(){
     $("resetCloudCfg").onclick=()=>{if(confirm("清除当前 Supabase 配置？")){localStorage.removeItem("portalCloudConfig");sb=null;currentUser=null;closeModal();setSyncStatus("未配置云同步","");updateCloudButton()}};
     $("signupBtn").onclick=async()=>{const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;setCloudCfg({...c,autoSync:$("autoSync").checked});
       const {data,error}=await sb.auth.signUp({email,password});if(error)return alert("注册失败："+error.message);
-      if(data.session){currentUser=data.user;alert("注册并登录成功");closeModal();await smartSync();updateCloudButton();startPolling()}
+      if(data.session){currentUser=data.user;alert("注册并登录成功");closeModal();await smartSync();if(ensureStudyLinks())saveData();updateCloudButton();startPolling()}
       else alert("注册成功。若 Supabase 开启了邮箱确认，请先到邮箱完成确认后再登录。")
     };
     $("signinBtn").onclick=async()=>{const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;setCloudCfg({...c,autoSync:$("autoSync").checked});
       const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)return alert("登录失败："+error.message);
-      currentUser=data.user;closeModal();await smartSync();updateCloudButton();startPolling()
+      currentUser=data.user;closeModal();await smartSync();if(ensureStudyLinks())saveData();updateCloudButton();startPolling()
     };
     return
   }
@@ -512,7 +512,10 @@ $("themeBtn").onclick=()=>{document.body.classList.toggle("dark");localStorage.s
 (async function boot(){
   render(); initSupabase(); await refreshSession();
   if(currentUser&&cloudCfg().autoSync){await smartSync();startPolling()}
-  if(ensureStudyLinks()) saveData();
+  if(ensureStudyLinks()){
+    if(currentUser&&cloudReady()&&cloudCfg().autoSync) saveData();
+    else localStorage.setItem("myPortalDataV3",JSON.stringify(appData));
+  }
   render();
   updateCloudButton()
 })();
