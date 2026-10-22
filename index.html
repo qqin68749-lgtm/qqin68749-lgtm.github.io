@@ -239,6 +239,37 @@ function ensureStudyLinks(){
   return true;
 }
 
+function isPristineDefaultData(data){
+  if(!data || data.title!==DEFAULT_DATA.title || data.subtitle!==DEFAULT_DATA.subtitle) return false;
+  const normUrl=u=>{let v=String(u||"").split("?")[0].split("#")[0].toLowerCase();while(v.endsWith("/"))v=v.slice(0,-1);return v};
+  const sig=l=>[normUrl(l.url),l.name||"",l.desc||"",l.icon||"",l.iconUrl||"",l.keywords||"",l.tag||""].join("::");
+  const sections=Array.isArray(data.sections)?data.sections:[];
+  const defaultSections=DEFAULT_DATA.sections||[];
+  const defaultTitles=new Set(defaultSections.map(s=>s.title));
+  for(const base of defaultSections){
+    const cur=sections.find(s=>s.title===base.title);
+    if(!cur || (cur.subtitle||"")!==(base.subtitle||"")) return false;
+    const expected=(base.links||[]).map(sig).sort();
+    const actual=(cur.links||[]).map(sig).sort();
+    if(JSON.stringify(expected)!==JSON.stringify(actual)) return false;
+  }
+  const studySection=sections.find(s=>s.title==="🎯 学习计划");
+  const extraSections=sections.filter(s=>!defaultTitles.has(s.title)&&s.title!=="🎯 学习计划");
+  if(extraSections.length) return false;
+  if(studySection){
+    const actual=(studySection.links||[]).map(l=>normUrl(l.url)+"::"+(l.name||"")).sort();
+    const expected=[
+      normUrl("https://qqin68749-lgtm.github.io/ielts-study/")+"::雅思 IELTS Academic 7.0",
+      normUrl("https://qqin68749-lgtm.github.io/python-md-study/")+"::Python × MD 学习计划"
+    ].sort();
+    if(JSON.stringify(actual)!==JSON.stringify(expected)) return false;
+  }
+  const bg=data.background||DEFAULT_DATA.background;
+  const defaultBg=DEFAULT_DATA.background;
+  if((bg.type||"")!==(defaultBg.type||"") || (bg.value||"")!==(defaultBg.value||"")) return false;
+  return true;
+}
+
 function cloudCfg(){
   try{return JSON.parse(localStorage.getItem("portalCloudConfig")||"{}")}catch(e){return{}}
 }
@@ -445,9 +476,17 @@ async function smartSync(){
   try{
     const {data,error}=await sb.from("portal_profiles").select("data,updated_at").eq("user_id",currentUser.id).maybeSingle();
     if(error)throw error;
-    if(!data?.data){await pushCloud(true);return}
+    if(!data?.data){
+      if(isPristineDefaultData(appData)){
+        setSyncStatus("云端暂无数据；请先在有自定义网址的设备上点击“上传当前配置”","warn");
+        return;
+      }
+      await pushCloud(true);return;
+    }
     const cloud=data.data,ct=Date.parse(cloud?._meta?.updatedAt||data.updated_at||0),lt=Date.parse(appData?._meta?.updatedAt||0);
-    if(ct>lt){appData=cloud;localStorage.setItem("myPortalDataV3",JSON.stringify(appData));render();setSyncStatus("已从云端更新","ok")}
+    if(isPristineDefaultData(appData) || ct>lt){
+      appData=cloud;localStorage.setItem("myPortalDataV3",JSON.stringify(appData));render();setSyncStatus("已从云端更新","ok");
+    }
     else if(lt>ct){await pushCloud(true)}
     else setSyncStatus("云端已是最新","ok")
   }catch(e){setSyncStatus("云同步检查失败","warn")}
@@ -462,9 +501,9 @@ async function openCloudModal(){
     openModal(`<h3>云同步设置</h3>
     <div class="notice">本页面使用 <strong>Supabase</strong> 做私人云同步。你需要先创建一个免费的 Supabase 项目，并把 Project URL 和 anon public key 填到这里。数据库只存你的导航配置。</div>
     <div class="form-row"><label>Supabase Project URL</label><input class="input" id="sbUrl" value="${esc(c.url||"")}" placeholder="https://xxxx.supabase.co"></div>
-    <div class="form-row"><label>Supabase anon public key</label><textarea class="textarea" id="sbKey" placeholder="eyJ...">${esc(c.anonKey||"")}</textarea></div>
+    <div class="form-row"><label>Supabase Publishable key（或旧版 anon public key）</label><textarea class="textarea" id="sbKey" placeholder="sb_publishable_...">${esc(c.anonKey||"")}</textarea></div>
     <label class="checkbox"><input type="checkbox" id="autoSync" ${c.autoSync!==false?"checked":""}> 登录后自动同步</label>
-    <div class="help">请只填 anon public key，不要把 service_role key 放进网页。</div>
+    <div class="help">请填写 publishable key 或旧版 anon public key；绝不要填写 secret / service_role key。</div>
     <div class="modal-actions"><button class="btn" id="cancelCloud">取消</button><button class="btn primary" id="saveCloud">保存并继续</button></div>`);
     $("cancelCloud").onclick=closeModal;$("saveCloud").onclick=async()=>{setCloudCfg({url:$("sbUrl").value.trim(),anonKey:$("sbKey").value.trim(),autoSync:$("autoSync").checked});closeModal();initSupabase();await refreshSession();openCloudModal()}
     return
@@ -513,7 +552,7 @@ $("themeBtn").onclick=()=>{document.body.classList.toggle("dark");localStorage.s
   render(); initSupabase(); await refreshSession();
   if(currentUser&&cloudCfg().autoSync){await smartSync();startPolling()}
   if(ensureStudyLinks()){
-    if(currentUser&&cloudReady()&&cloudCfg().autoSync) saveData();
+    if(currentUser&&cloudReady()&&cloudCfg().autoSync) saveData({sync:false});
     else localStorage.setItem("myPortalDataV3",JSON.stringify(appData));
   }
   render();
