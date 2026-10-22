@@ -405,7 +405,7 @@ function fillWeekSelect(){
  s.innerHTML=weeks.map(function(w){return "<option value='"+w.n+"'>第 "+w.n+" 周 · "+w.range+"</option>";}).join("");
  s.value=String(clampWeek(state.selectedWeek||currentWeek()));
  var r=document.getElementById("reviewWeek");
- r.innerHTML=milestones.map(function(n){return "<option value='"+n+"'>第 "+n+" 周"+(n===1?"（基线）":"（阶段复盘）")+"</option>";}).join("");
+ r.innerHTML=milestones.map(function(n){return "<option value='"+n+"'>第 "+n+" 周 · "+weeks[n-1].range+(n===1?"（基线）":"（阶段复盘）")+"</option>";}).join("");
  r.value=String(state.reviewWeek||defaultReviewWeek());
 }
 function renderWeek(){
@@ -476,13 +476,13 @@ function renderMilestones(){
   var r=state.reviews[n],saved=!!r;
   var l=saved&&r.listening!==""?"听力 "+esc(r.listening)+"/40":"听力待记录";
   var rd=saved&&r.reading!==""?"阅读 "+esc(r.reading)+"/40":"阅读待记录";
-  return "<div class='taskline'><div><div class='row'><b>第 "+n+" 周</b><span class='pill "+(saved?"good":"")+"'>"+(saved?"已填写":"待复盘")+"</span></div><p class='small muted'>"+l+" · "+rd+"</p></div><button class='btn' onclick='openReview("+n+")'>"+(saved?"查看 / 修改":"开始复盘")+"</button></div>";
+  return "<div class='taskline'><div><div class='row'><b>第 "+n+" 周 · "+esc(weeks[n-1].range)+"</b><span class='pill "+(saved?"good":"")+"'>"+(saved?"已填写":"待复盘")+"</span></div><p class='small muted'>"+l+" · "+rd+"</p></div><button class='btn' onclick='openReview("+n+")'>"+(saved?"查看 / 修改":"开始复盘")+"</button></div>";
  }).join("");
 }
 function renderPrompt(){
  var w=weeks[clampWeek(currentWeek())-1],done=[];
  for(var d=0;d<7;d++)if(isDayDone(w.n,d))done.push(planDayLabel(w.n,d));
- var text="我的 IELTS Academic 7.0 学习进度：\n当前计划周：第 "+w.n+" 周（"+w.range+"）\n本周重点：听力 "+w.listen+"；口语 "+w.speak+"；阅读 "+w.read+"；写作 "+w.write+"\n本周已完成/保底： "+(done.join("、")||"尚未记录")+"\n累计记录学习时间： "+Object.values(state.minutes).reduce(function(a,b){return a+(Number(b)||0)},0)+" 分钟\n请根据这些记录帮我复盘，不要把单次练习直接换算成官方 Band。";
+ var text="我的 IELTS Academic 7.0 学习进度：\n计划开始日期："+formatDate(getStartDate(),true)+"\n当前计划周：第 "+w.n+" 周（"+w.range+"）\n本周重点：听力 "+w.listen+"；口语 "+w.speak+"；阅读 "+w.read+"；写作 "+w.write+"\n本周已完成/保底： "+(done.join("、")||"尚未记录")+"\n累计记录学习时间： "+Object.values(state.minutes).reduce(function(a,b){return a+(Number(b)||0)},0)+" 分钟\n请根据这些记录帮我复盘，不要把单次练习直接换算成官方 Band。";
  document.getElementById("promptText").textContent=text;
 }
 function copyProgressPrompt(){
