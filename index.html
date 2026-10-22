@@ -221,6 +221,24 @@ function saveData({sync=true}={}){
   setSyncStatus(currentUser ? "等待同步…" : "本地保存",currentUser?"warn":"");
   if(sync && cloudReady() && cloudCfg().autoSync) scheduleCloudPush();
 }
+// Add the two published study pages on every device without overwriting personal links.
+function ensureStudyLinks(){
+  if(!Array.isArray(appData.sections)) appData.sections=[];
+  const studyLinks=[
+    {name:"雅思 IELTS Academic 7.0",url:"https://qqin68749-lgtm.github.io/ielts-study/",iconUrl:"",icon:"IELTS",desc:"52 周雅思学习计划、每日任务与课程视频",keywords:"IELTS 雅思 英语 听力 阅读 写作 口语 学习计划",tag:"学习"},
+    {name:"Python × MD 学习计划",url:"https://qqin68749-lgtm.github.io/python-md-study/",iconUrl:"",icon:"PY/MD",desc:"Python 与分子动力学学习路线、每日任务与进度",keywords:"Python MD 分子动力学 机器学习势 学习计划",tag:"学习"}
+  ];
+  const normalize=u=>{let v=String(u||"").split("?")[0].split("#")[0].toLowerCase();while(v.endsWith("/"))v=v.slice(0,-1);return v};
+  const existing=new Set(appData.sections.flatMap(s=>(s.links||[]).map(l=>normalize(l.url))));
+  const missing=studyLinks.filter(l=>!existing.has(normalize(l.url)));
+  if(!missing.length)return false;
+  let section=appData.sections.find(s=>s.title==="🎯 学习计划");
+  if(!section){section={id:crypto.randomUUID(),title:"🎯 学习计划",subtitle:"雅思英语 · Python 与分子动力学",links:[]};appData.sections.push(section)}
+  section.links=Array.isArray(section.links)?section.links:[];
+  missing.forEach(l=>section.links.push({...l,id:crypto.randomUUID()}));
+  return true;
+}
+
 function cloudCfg(){
   try{return JSON.parse(localStorage.getItem("portalCloudConfig")||"{}")}catch(e){return{}}
 }
@@ -494,6 +512,8 @@ $("themeBtn").onclick=()=>{document.body.classList.toggle("dark");localStorage.s
 (async function boot(){
   render(); initSupabase(); await refreshSession();
   if(currentUser&&cloudCfg().autoSync){await smartSync();startPolling()}
+  if(ensureStudyLinks()) saveData();
+  render();
   updateCloudButton()
 })();
 </script>
