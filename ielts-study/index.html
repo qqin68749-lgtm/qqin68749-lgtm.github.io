@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>IELTS Academic 7.0 学习操作台</title>
+<style>
+:root{--bg:#08111f;--card:#111d31;--card2:#17263e;--text:#edf4ff;--muted:#9caac0;--line:#293b59;--a:#72d5ff;--b:#b59cff;--ok:#78e5aa;--warn:#ffd86f;--danger:#ff9e9e}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#08111f,#0d1830 45%,#101a30);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.55}
+a{color:var(--a)}button,input,select,textarea{font:inherit}button{cursor:pointer}
+.wrap{max-width:1220px;margin:auto;padding:20px}
+.hero,.card{border:1px solid var(--line);background:rgba(17,29,49,.96);border-radius:20px;padding:20px;box-shadow:0 15px 40px #0003}
+.hero{background:linear-gradient(135deg,#72d5ff20,#b59cff22);margin-bottom:14px}
+.heroTop{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--a);font-weight:800}
+h1{margin:4px 0 8px;font-size:clamp(27px,4vw,40px);line-height:1.2}
+h2{font-size:21px;margin:0 0 12px}h3{font-size:16px;margin:0 0 8px}
+p{margin:8px 0}.muted{color:var(--muted)}.small{font-size:12px}.stat{font-size:30px;font-weight:850;line-height:1.25}.pill{display:inline-block;border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:4px 9px;font-size:12px;color:var(--muted);margin:3px 4px 0 0}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;padding:10px 0;background:#0d1830ed;z-index:5;backdrop-filter:blur(12px)}
+.tabbtn,.btn{border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:var(--card2);color:var(--text);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.tabbtn.on,.btn.primary{background:linear-gradient(90deg,var(--a),var(--b));color:#071320;font-weight:800;border-color:transparent}
+.tab{display:none}.tab.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}
+@media(max-width:850px){.c3,.c4,.c5,.c6,.c7,.c8{grid-column:span 12}.wrap{padding:12px}.hero,.card{padding:16px}.tabs{position:static}}
+.bar{height:10px;background:#22304a;border-radius:20px;overflow:hidden;margin:10px 0}.fill{height:100%;background:linear-gradient(90deg,var(--a),var(--b));width:0;transition:width .2s}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,textarea,select{width:100%;background:#08111f;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--a);vertical-align:middle}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+textarea{min-height:92px;resize:vertical}
+.today{border-left:4px solid var(--warn);background:var(--card2);border-radius:12px;padding:14px}
+.taskline{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;border-top:1px dashed var(--line);padding:13px 0}
+.tasktop{display:flex;gap:10px;align-items:flex-start}.tasktop input{margin-top:3px;flex-shrink:0}
+.tasktitle{font-weight:800}.tasktext{margin:4px 0 0;color:#dce7f8}
+.taskfoot{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-left:28px}
+.lowcheck{display:inline-flex;gap:6px;align-items:center;border:1px solid #3c4962;border-radius:10px;padding:5px 8px;font-size:12px;color:var(--muted)}
+.done .tasktitle{text-decoration:line-through;color:var(--muted)}
+.weekhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.videoGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:700px){.videoGrid{grid-template-columns:1fr}}
+.video{border:1px solid var(--line);background:#0c1728;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.video h3{margin:0}.video .actions{margin-top:auto}.video a{font-weight:750}
+.note{background:#0b1728;border:1px solid var(--line);border-radius:12px;padding:12px}
+.good{color:var(--ok)}.warn{color:var(--warn)}.danger{color:var(--danger)}
+.progressRow{display:grid;grid-template-columns:130px 1fr 46px;gap:10px;align-items:center;margin:12px 0}
+.phase{font-size:12px;color:var(--a);font-weight:800;letter-spacing:.03em}
+.kpi{font-size:12px;color:var(--muted)}
+.footer{padding:22px 4px 8px;color:var(--muted);font-size:12px;text-align:center}
+.toast{position:fixed;right:16px;bottom:16px;background:#0e281b;border:1px solid #2e6848;color:#d9ffe8;padding:10px 13px;border-radius:10px;display:none;z-index:20}
+.toggleline{display:flex;align-items:center;gap:9px}.toggleline input{width:18px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="heroTop">
+    <div>
+      <div class="eyebrow">PERSONAL STUDY DASHBOARD · 2026—2028</div>
+      <h1>IELTS Academic 7.0 学习操作台</h1>
+      <p class="muted">52 周逐日计划 · 每天 60–90 分钟 · 听说读写 + 课程视频 + 阶段复盘</p>
+      <div><span class="pill">正式开始：2026.10.19</span><span class="pill">目标：Overall 7.0</span><span class="pill">未考过雅思：先建立基线</span></div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="../python-md-study/" target="_blank" rel="noopener">打开 Python × MD 站点 ↗</a>
+      <button class="btn" onclick="exportData()">备份进度 ↓</button>
+    </div>
+  </div>
+  <p class="small muted" style="margin-top:14px">提示：完成情况保存在当前浏览器中（localStorage）。换浏览器或清除网站数据前，请先导出备份。视频链接沿用你提供的计划，个别课程可能因转载或下架而失效。</p>
+</header>
+
+<nav class="tabs">
+  <button class="tabbtn on" data-tab="today">今日任务</button>
+  <button class="tabbtn" data-tab="plan">52 周计划</button>
+  <button class="tabbtn" data-tab="videos">视频课程库</button>
+  <button class="tabbtn" data-tab="review">阶段复盘</button>
+  <button class="tabbtn" data-tab="roadmap">目标与考试路线</button>
+</nav>
+
+<section id="today" class="tab on">
+  <div class="grid">
+    <div class="card c3"><div class="muted">计划日完成率</div><div class="stat" id="pct">0%</div><div class="bar"><div class="fill" id="pbar"></div></div><div class="small muted" id="doneCount">0 / 364 个学习日</div></div>
+    <div class="card c3"><div class="muted">当前周进度</div><div class="stat" id="weekCount">0/7</div><div class="small muted" id="weekTitle"></div><div class="bar"><div class="fill" id="weekBar"></div></div></div>
+    <div class="card c3"><div class="muted">累计学习时间</div><div class="stat" id="totalMins">0 分钟</div><div class="small muted">只统计你主动记录的时长</div></div>
+    <div class="card c3"><div class="muted">今天已记录</div><div class="stat" id="todayMins">0 分钟</div><div class="small muted" id="todayDate"></div></div>
+
+    <div class="card c8">
+      <div class="row"><h2>今天做什么</h2><span class="pill" id="todaySkill">听力</span></div>
+      <div class="today" id="todayTask"></div>
+      <div style="margin-top:14px" class="row">
+        <div><div class="tasktitle">今天的学习时长</div><div class="small muted">课程视频时间也算在总时长内，不额外叠加。</div></div>
+        <select id="duration" style="max-width:170px" onchange="renderToday()">
+          <option value="60">60 分钟轻量版</option><option value="75" selected>75 分钟标准版</option><option value="90">90 分钟加强版</option>
+        </select>
+      </div>
+      <div class="note" id="timeBreakdown" style="margin-top:10px"></div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn primary" onclick="toggleTodayDone()">完成今日任务</button>
+        <button class="btn" onclick="addMinutes(15)">+15 分钟</button>
+        <button class="btn" onclick="addMinutes(25)">+25 分钟</button>
+        <button class="btn" onclick="addMinutes(45)">+45 分钟</button>
+      </div>
+      <div class="small muted" style="margin-top:8px">学习时长按钮只记时长，不会自动把任务标记为完成。</div>
+    </div>
+
+    <div class="card c4">
+      <h2>低谷期模式</h2>
+      <p class="muted">今天如果很难进入状态，不必硬扛完整计划。选择保底任务，也算保持学习连续性。</p>
+      <label class="toggleline"><input type="checkbox" id="lowMode" onchange="toggleLowMode()"> 启用低谷期模式</label>
+      <div id="lowPanel" class="note" style="margin-top:12px">
+        <b>15 分钟保底任务</b>
+        <p>任选一项：复习词汇；精听 30–60 秒并记下一个漏听点；回答 2 道口语题并录音；阅读一段并圈出原文证据。</p>
+        <p class="small muted">完成标准：做完一小项即可，不需要补回当天所有任务。</p>
+        <label class="toggleline"><input type="checkbox" id="lowTodayCheck" onchange="toggleTodayLow()"> 我完成了今天的保底任务</label>
+      </div>
+      <h3 style="margin-top:16px">本周重点</h3>
+      <div id="weeklyFocus" class="small"></div>
+      <div class="note" style="margin-top:12px">
+        <b>给自己一个提醒</b>
+        <p class="small">计划是用来支持你，不是用来评判你。状态差时做小一点，状态恢复后再逐步增加。</p>
+      </div>
+    </div>
+
+    <div class="card c12">
+      <div class="row"><h2>四项能力目标</h2><span class="small muted">计划目标组合，不是成绩保证</span></div>
+      <div class="grid">
+        <div class="c3"><div class="muted">Listening</div><div class="stat">7.5</div><div class="small muted">听力：拼写、连读、信号词、精听</div></div>
+        <div class="c3"><div class="muted">Reading</div><div class="stat">7.5</div><div class="small muted">阅读：定位、同义替换、证据回查</div></div>
+        <div class="c3"><div class="muted">Writing</div><div class="stat">6.5</div><div class="small muted">写作：段落逻辑、Task 1/2、反馈</div></div>
+        <div class="c3"><div class="muted">Speaking</div><div class="stat">6.5</div><div class="small muted">口语：录音、扩展、自然表达</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="plan" class="tab">
+  <div class="card">
+    <div class="weekhead">
+      <div><h2>52 周逐日计划</h2><div class="small muted">按你原计划保留每周主题、听力重点、口语主题、阅读题型与写作训练；每天任务均可打勾。</div></div>
+      <div class="actions">
+        <button class="btn" onclick="moveWeek(-1)">← 上一周</button>
+        <select id="weekSelect" style="width:auto;min-width:185px" onchange="selectWeek(this.value)"></select>
+        <button class="btn" onclick="moveWeek(1)">下一周 →</button>
+      </div>
+    </div>
+    <div id="weekDetail"></div>
+  </div>
+</section>
+
+<section id="videos" class="tab">
+  <div class="card">
+    <div class="row"><div><h2>雅思视频课程库</h2><p class="muted">优先按计划周次学习。视频观看时间计入当日 60–90 分钟总时长。</p></div><span class="pill">11 个课程入口</span></div>
+    <input id="videoSearch" placeholder="搜索课程、老师、听力 / 阅读 / 写作 / 口语……" oninput="renderCourses()" style="margin:10px 0 14px">
+    <div id="courseGrid" class="videoGrid"></div>
+    <div class="note" style="margin-top:14px"><b>课程使用原则</b><p class="small muted">文档中标注为第三方转载的 Simon Task 1 与杨帅口语合集仅作为备用；若链接失效，可按课程名在 B 站站内搜索。不要为“配套讲义”购买来历不明的资源。课程是辅助，必须搭配真题练习和纠错。</p></div>
+  </div>
+</section>
+
+<section id="review" class="tab">
+  <div class="grid">
+    <div class="card c5">
+      <h2>每四周量化复盘</h2>
+      <p class="small muted">听力、阅读记录原始正确题数（每套 40 题）；写作与口语记录真实表现。不要把单次练习分数直接当作官方 Band。</p>
+      <label>复盘节点</label><select id="reviewWeek" onchange="loadReview()"></select>
+      <label>听力正确题数（/40）</label><input id="rListening" type="number" min="0" max="40" placeholder="例如 25">
+      <label>阅读正确题数（/40）</label><input id="rReading" type="number" min="0" max="40" placeholder="例如 27">
+      <label>写作记录 / 反馈</label><textarea id="rWriting" placeholder="Task 1 / Task 2 完成度、四项评分维度、主要语法问题……"></textarea>
+      <label>口语记录</label><textarea id="rSpeaking" placeholder="录音时长、停顿、展开能力、发音可懂度……"></textarea>
+      <label>本阶段最有效的做法</label><textarea id="rWins" placeholder="什么方法真的有帮助？"></textarea>
+      <label>主要卡点与下阶段调整</label><textarea id="rNext" placeholder="下阶段保留什么、减少什么、重点练什么？"></textarea>
+      <button class="btn primary" onclick="saveReview()">保存本次复盘</button>
+    </div>
+    <div class="card c7">
+      <h2>阶段检查清单</h2>
+      <div id="milestoneList"></div>
+      <div class="note" style="margin-top:14px"><b>调整规则（来自你的计划）</b>
+        <ul class="small">
+          <li>听力若连续两个月仍大量漏数字和词尾：改为短音频精听、跟读与纠错，减少泛看视频。</li>
+          <li>口语若仍无法连续说 60 秒：每天从阅读/写作日借 5 分钟做 P1 即答，总学习时间不变。</li>
+          <li>每月完成一篇 Task 2 和一篇 Task 1，并按任务回应/完成度、连贯衔接、词汇、语法检查；尽量争取合格反馈。</li>
+          <li>AI 反馈可辅助自查，但不能当作官方分数或专业写作批改的替代。</li>
+        </ul>
+      </div>
+      <h3 style="margin-top:18px">进度备份 / 恢复</h3>
+      <div class="actions"><button class="btn" onclick="exportData()">导出 JSON 备份</button><button class="btn" onclick="document.getElementById('importFile').click()">导入 JSON 备份</button><button class="btn" onclick="resetData()">清空本机进度</button><input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importData(event)"></div>
+      <p class="small muted">数据只保存在当前浏览器。导出 JSON 后可自行保存；导入会覆盖当前网站的本地进度。</p>
+    </div>
+  </div>
+</section>
+
+<section id="roadmap" class="tab">
+  <div class="grid">
+    <div class="card c6">
+      <h2>你的起点与目标</h2>
+      <p>当前基础：四级 425、六级 425；尚未参加雅思考试，听力与口语相对薄弱。四六级成绩不能直接换算雅思分数，因此首周先建立诊断基线。</p>
+      <div class="note"><b>首周基线任务</b><ul class="small"><li>剑桥雅思 Academic 听力一套（可拆两天）</li><li>阅读一篇，记录原始正确数</li><li>Task 2 限时写作样本</li><li>口语录音约 2 分钟</li></ul></div>
+      <h3 style="margin-top:16px">每周固定节奏</h3>
+      <p class="small">周一听力 · 周二口语 · 周三阅读 · 周四听力 · 周五写作 · 周六综合 · 周日周测与复盘。</p>
+      <p class="small muted">75 分钟标准版：复习 10 + 课程/技巧 20 + 练习 30 + 纠错 15。60 分钟版：8 + 12 + 28 + 12；90 分钟版：10 + 20 + 45 + 15。</p>
+    </div>
+    <div class="card c6">
+      <h2>考试窗口：2027.09—2028.06</h2>
+      <div class="timeline">
+        <div class="taskline"><b>2027.09–10</b><div>根据 52 周数据做首次模拟；两周一套听读完整限时测试（可拆天），写作与口语尽量获取人工反馈。<p class="small muted">接近目标再考虑首考。</p></div></div>
+        <div class="taskline"><b>2027.11–12</b><div>薄弱科目专项：听力拼写/地图、口语 Part 3 解释、写作论证；每月一次四科分拆模拟。<p class="small muted">模考稳定再选择考试。</p></div></div>
+        <div class="taskline"><b>2028.01–02</b><div>错题复做、表达自然化、按当季口语题库练习；每周保持两次听力、两次口语。<p class="small muted">成绩不足时不冲动报名。</p></div></div>
+        <div class="taskline"><b>2028.03–04</b><div>每两周检查四科；写作按评分标准找合格教师批改，口语模拟面试。<p class="small muted">尽量提前 6–8 周确定日期。</p></div></div>
+        <div class="taskline"><b>2028.05–06</b><div>考前 4–6 周进行听读限时、写作计时和口语即时表达；最后一周减量。<p class="small muted">按真实模考表现决定最终考试。</p></div></div>
+      </div>
+    </div>
+    <div class="card c12">
+      <h2>每日模板</h2>
+      <div class="grid">
+        <div class="c3"><div class="note"><b>听力主日</b><p class="small">旧词复习 → L0/L1/L2 或音频技巧 → 剑雅一小节/定点精听 → 跟读录音 + 错因</p></div></div>
+        <div class="c3"><div class="note"><b>阅读主日</b><p class="small">同义替换 → 阅读课/文章结构 → 一篇分段或限时 → 定位证据 + 长难句</p></div></div>
+        <div class="c3"><div class="note"><b>写作主日</b><p class="small">表达复习 → Simon / 顾家北课程 → 段落或整篇拆分 → 自改语法与逻辑</p></div></div>
+        <div class="c3"><div class="note"><b>口语主日</b><p class="small">跟读热身 → 示范/主题表达 → P1/P2/P3 录音 → 回听重录</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="footer">IELTS Academic 7.0 学习操作台 · 根据你上传的《雅思 7 分自学计划 V2.0》整理 · 本站不承诺考试分数</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var STORE_KEY = "ieltsAcademic70DashboardV1";
+var courses = [
+ {code:"L0",name:"基础英语语音 / 连读：昂克英文君 11 集",kind:"听力 / 发音",url:"https://www.bilibili.com/video/BV1sQ4y1K7f2/",when:"第 1–6 周；重点 P3–P9，选看约 2 小时",note:"打好音标、连读和弱读基础。"},
+ {code:"L1",name:"BBC Tim’s Pronunciation Workshop",kind:"听力 / 发音",url:"https://www.bilibili.com/video/BV1YA411E7L4/",when:"第 3–12 周；每周 2–3 小节，完成前 30 小节",note:"重点练英式连读、弱读与语流。"},
+ {code:"L2",name:"王陆雅思听力技巧课（28 集合集）",kind:"听力",url:"https://www.bilibili.com/video/BV1ai4211748/",when:"第 2–14 周；优先 1–5、13、16–18、25–28 集",note:"按弱项选择，不必机械刷完整合集。"},
+ {code:"L3",name:"王陆语料库：如何正确刷语料",kind:"听力 / 词汇",url:"https://www.bilibili.com/video/BV1Fi421S7XC/",when:"第 2–3 周",note:"建立听写与纠错方法。"},
+ {code:"R1",name:"刘洪波阅读突击课（10 集）",kind:"阅读",url:"https://www.bilibili.com/video/BV1i14y1M7fk/",when:"第 5–14 周，每周 1 集",note:"看完要做题验证，不以看课代替练习。"},
+ {code:"R2",name:"刘洪波 Heading 专题",kind:"阅读",url:"https://www.bilibili.com/video/BV1SY4y1Q79i/",when:"第 11 周",note:"搭配一篇 Heading 练习。"},
+ {code:"R3",name:"刘洪波 Matching 专题",kind:"阅读",url:"https://www.bilibili.com/video/BV1iv4y1V7KU/",when:"第 13 周",note:"搭配一篇 Matching 练习。"},
+ {code:"W1",name:"Simon Task 2 写作 12 节",kind:"写作",url:"https://www.bilibili.com/video/BV1L44y1G7Q8/",when:"第 9–20 周，每周 1 节",note:"学习论证与段落组织，避免机械背模板。"},
+ {code:"W2",name:"Simon Task 1 写作 9 节（第三方转载合集）",kind:"写作",url:"https://www.bilibili.com/video/BV1tm5hzQENJ/",when:"第 21–29 周，每周 1 节",note:"第三方转载，若失效可按课程名站内搜索。"},
+ {code:"W3",name:"顾家北短课：逻辑 / 语法 / 写作误区",kind:"写作",url:"https://www.bilibili.com/video/BV1pP41177vQ/",when:"第 25–36 周每周选 1–2 条；后续按弱项复习",note:"用来补短板，仍要自己写、自己改。"},
+ {code:"S1",name:"杨帅口语课合集（第三方转载，较长）",kind:"口语",url:"https://www.bilibili.com/video/BV1fX6VYLEyE/",when:"第 7–22 周；每周选 P1/P2/P3 片段 15–20 分钟",note:"不强制看完约 43 小时的合集；以录音练习为主。"}
+];
+
+var listeningFocus = [
+"数字拼写与日期","数字拼写与日期","地址姓名与表格","地址姓名与表格","地图方位与路线","地图方位与路线","单选与干扰项","单选与干扰项","多选与同义替换","多选与同义替换","Section 3 讨论","Section 3 讨论","Section 4 学术讲座","Section 4 学术讲座","转折与否定信号","转折与否定信号","数字拼写与日期","数字拼写与日期","地址姓名与表格","地址姓名与表格","地图方位与路线","地图方位与路线","单选与干扰项","单选与干扰项","多选与同义替换","多选与同义替换","Section 3 讨论","Section 3 讨论","Section 4 学术讲座","Section 4 学术讲座","转折与否定信号","转折与否定信号","数字拼写与日期","数字拼写与日期","地址姓名与表格","地址姓名与表格","地图方位与路线","地图方位与路线","单选与干扰项","单选与干扰项","多选与同义替换","多选与同义替换","Section 3 讨论","Section 3 讨论","Section 4 学术讲座","Section 4 学术讲座","转折与否定信号","转折与否定信号","数字拼写与日期","数字拼写与日期","地址姓名与表格","地址姓名与表格"
+];
+var speakingTopics = [
+"学习与工作","学习与工作","家乡与居住","家乡与居住","兴趣与周末","兴趣与周末","人物故事","人物故事","地点故事","地点故事","事件故事","事件故事","物品故事","物品故事","教育与科技","教育与科技","环境与城市","环境与城市","文化与社会","文化与社会","学习与工作","学习与工作","家乡与居住","家乡与居住","兴趣与周末","兴趣与周末","人物故事","人物故事","地点故事","地点故事","事件故事","事件故事","物品故事","物品故事","教育与科技","教育与科技","环境与城市","环境与城市","文化与社会","文化与社会","学习与工作","学习与工作","家乡与居住","家乡与居住","兴趣与周末","兴趣与周末","人物故事","人物故事","地点故事","地点故事","事件故事","事件故事"
+];
+var readingFocus = [
+"定位词与题干拆解","定位词与题干拆解","判断题 T/F/NG","判断题 T/F/NG","填空与词性预测","填空与词性预测","标题匹配 Heading","标题匹配 Heading","人名观点匹配","人名观点匹配","段落信息 Matching","段落信息 Matching","选择题与同义替换","选择题与同义替换","段落主旨与长难句","段落主旨与长难句","定位词与题干拆解","定位词与题干拆解","判断题 T/F/NG","判断题 T/F/NG","填空与词性预测","填空与词性预测","标题匹配 Heading","标题匹配 Heading","人名观点匹配","人名观点匹配","段落信息 Matching","段落信息 Matching","选择题与同义替换","选择题与同义替换","段落主旨与长难句","段落主旨与长难句","定位词与题干拆解","定位词与题干拆解","判断题 T/F/NG","判断题 T/F/NG","填空与词性预测","填空与词性预测","标题匹配 Heading","标题匹配 Heading","人名观点匹配","人名观点匹配","段落信息 Matching","段落信息 Matching","选择题与同义替换","选择题与同义替换","段落主旨与长难句","段落主旨与长难句","定位词与题干拆解","定位词与题干拆解","判断题 T/F/NG","判断题 T/F/NG"
+];
+var writingFocus = [
+"句子基本结构","句子基本结构","句子基本结构","观点 + 原因 + 例子","观点 + 原因 + 例子","观点 + 原因 + 例子","开头段与改写题目","开头段与改写题目","开头段与改写题目","主体段 PEEL","主体段 PEEL","主体段 PEEL","结论段","结论段","结论段","同意与否","同意与否","同意与否","双边讨论","双边讨论","双边讨论","问题解决","问题解决","问题解决","Task 1 折线图","Task 1 折线图","Task 1 折线图","Task 1 柱状图","Task 1 柱状图","Task 1 柱状图","Task 1 饼图","Task 1 饼图","Task 1 饼图","Task 1 表格","Task 1 表格","Task 1 表格","Task 1 流程图","Task 1 流程图","Task 1 流程图","Task 1 地图题","Task 1 地图题","Task 1 地图题","句子基本结构","句子基本结构","句子基本结构","观点 + 原因 + 例子","观点 + 原因 + 例子","观点 + 原因 + 例子","开头段与改写题目","开头段与改写题目","开头段与改写题目","主体段 PEEL"
+];
+var dayNames = ["周一","周二","周三","周四","周五","周六","周日"];
+var daySkills = ["听力","口语","阅读","听力","写作","综合","周测"];
+var milestones = [1,4,8,12,16,20,24,28,32,36,40,44,48,52];
+
+function formatDate(d, year){
+ var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+ return year ? y+"."+m+"."+day : m+"."+day;
+}
+function dateRange(n){
+ var s=new Date(2026,9,19+(n-1)*7),e=new Date(s.getFullYear(),s.getMonth(),s.getDate()+6);
+ if(s.getFullYear()===e.getFullYear() && s.getMonth()===e.getMonth()) return formatDate(s,true)+"—"+formatDate(e,false);
+ if(s.getFullYear()===e.getFullYear()) return formatDate(s,true)+"—"+formatDate(e,false);
+ return formatDate(s,true)+"—"+formatDate(e,true);
+}
+function phaseFor(n){return n<=8?"语音和考试入门":n<=20?"方法建立":n<=36?"专项提分":"限时训练与巩固";}
+function readCourseFor(n){return n<=4?"剑雅文章精读 / 题型说明":n<=14?"R1 刘洪波阅读突击课第"+(n-4)+"集":"R2/R3 按弱项复看或直接做真题";}
+function writeCourseFor(n){return n<=8?"基础句子训练（不强制写整篇）":n<=20?"W1 Simon Task 2 第"+(n-8)+"节":n<=29?"W2 Simon Task 1 第"+(n-20)+"节":"W3 顾家北短课 / 范文对照";}
+function makeWeeks(){
+ return Array.from({length:52},function(_,i){
+  var n=i+1;
+  var milestone=n===1?"首周建立基线：听力一套（可拆 2 天）、阅读 1 篇、写作一段、口语约 2 分钟录音。":(n%4===0?"第"+n+"周量化检查：记录听力/阅读原始正确题数、写作完成度和口语流利度；若连续两次未改善，下阶段减少泛看视频，增加复盘。":"");
+  return {n:n,range:dateRange(n),phase:phaseFor(n),listen:listeningFocus[i],speak:speakingTopics[i],read:readingFocus[i],readCourse:readCourseFor(n),write:writingFocus[i],writeCourse:writeCourseFor(n),milestone:milestone};
+ });
+}
+var weeks=makeWeeks();
+function initialState(){
+ return {full:{},low:{},minutes:{},reviews:{},lowMode:false,selectedWeek:currentWeek(),reviewWeek:defaultReviewWeek(),duration:75};
+}
+function loadState(){
+ try{var raw=localStorage.getItem(STORE_KEY);if(!raw)return initialState();var x=JSON.parse(raw);return Object.assign(initialState(),x||{});}catch(e){return initialState();}
+}
+function saveState(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
+function localDateKey(d){
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function currentWeek(){
+ var now=new Date(),todayUtc=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()),startUtc=Date.UTC(2026,9,19);
+ return Math.floor((todayUtc-startUtc)/604800000)+1;
+}
+function currentDay(){return (new Date().getDay()+6)%7;}
+function clampWeek(n){return Math.max(1,Math.min(52,Number(n)||1));}
+function defaultReviewWeek(){
+ var w=currentWeek();if(w<=1)return 1;return Math.min(52,Math.max(4,Math.floor(w/4)*4));
+}
+var state=loadState();
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function courseForListening(n){return n<=6?"L0 语音/连读":n<=12?"L1 连读弱读 + L2 对应技巧":n<=14?"L2 对应题型或剑雅音频":"L2 对应题型或剑雅音频";}
+function taskText(w,i){
+ if(i===0)return "词汇复习；学习 "+courseForListening(w.n)+"；围绕「"+w.listen+"」先做题，再选 45–90 秒音频定点听写；最后归类漏听、拼写和词尾问题。";
+ if(i===1)return "发音复习 + 口语示范；围绕「"+w.speak+"」回答 Part 1 的 4 道题，或完成 1 道 Part 2 并录音；回听后重录一次。";
+ if(i===2)return "同义词复习 + "+w.readCourse+"；做一篇分段阅读，专项练「"+w.read+"」；回到原文标出证据，不只核对答案。";
+ if(i===3)return "复习 + 听力技巧 / 连读弱读；用剑雅 Part 1/2 或对应 Section 练「"+w.listen+"」；逐句纠错并跟读。";
+ if(i===4)return "表达复习 + "+w.writeCourse+"；围绕「"+w.write+"」写 5–10 句或一个主体段（进入后期后按题型练习）；检查论点、语法和衔接。";
+ if(i===5)return "复习 + 听力/口语跟读；练「"+w.read+"」或改写一个写作段落；整理可复用表达，并记录一个仍然不懂的问题。";
+ return "词汇自测 + 口语录音复测 + 一小节听力或一篇阅读；统计正确率、错误类型和下周最需要解决的薄弱点。";
+}
+function timeBreakdown(mins){
+ if(mins===60)return "复习 8 分钟 · 视频/技巧 12 分钟 · 练习 28 分钟 · 纠错 12 分钟";
+ if(mins===90)return "复习 10 分钟 · 视频/技巧 20 分钟 · 练习 45 分钟 · 纠错 15 分钟";
+ return "复习 10 分钟 · 视频/技巧 20 分钟 · 练习 30 分钟 · 纠错 15 分钟";
+}
+function keyFor(w,d){return w+"-"+d;}
+function isDayDone(w,d){var k=keyFor(w,d);return !!(state.full[k]||state.low[k]);}
+function renderStats(){
+ var done=0,total=364,mins=0;
+ for(var w=1;w<=52;w++)for(var d=0;d<7;d++)if(isDayDone(w,d))done++;
+ Object.keys(state.minutes||{}).forEach(function(k){mins+=Number(state.minutes[k])||0;});
+ var pct=Math.round(done/total*100);
+ document.getElementById("pct").textContent=pct+"%";
+ document.getElementById("pbar").style.width=pct+"%";
+ document.getElementById("doneCount").textContent=done+" / "+total+" 个学习日（含保底任务）";
+ document.getElementById("totalMins").textContent=mins+" 分钟";
+ var w=clampWeek(state.selectedWeek||currentWeek()),wd=0;
+ for(var d=0;d<7;d++)if(isDayDone(w,d))wd++;
+ document.getElementById("weekCount").textContent=wd+"/7";
+ document.getElementById("weekTitle").textContent="第 "+w+" 周 · "+weeks[w-1].phase;
+ document.getElementById("weekBar").style.width=Math.round(wd/7*100)+"%";
+ var dk=localDateKey(new Date());
+ document.getElementById("todayMins").textContent=(Number(state.minutes[dk])||0)+" 分钟";
+}
+function renderToday(){
+ var n=currentWeek(),di=currentDay(),now=new Date();
+ document.getElementById("todayDate").textContent=now.toLocaleDateString("zh-CN",{year:"numeric",month:"long",day:"numeric",weekday:"long"});
+ document.getElementById("duration").value=String(state.duration||75);
+ document.getElementById("lowMode").checked=!!state.lowMode;
+ var w=weeks[clampWeek(n)-1];
+ document.getElementById("todaySkill").textContent=daySkills[di];
+ var low=!!state.lowMode, k=keyFor(w.n,di);
+ var fullDone=!!state.full[k],lowDone=!!state.low[k];
+ var text=low?"今天只做 15 分钟保底任务：任选一项——复习词汇；精听 30–60 秒并记下一个漏听点；回答 2 道口语题并录音；阅读一段并圈出原文证据。":taskText(w,di);
+ document.getElementById("todayTask").innerHTML="<div class='phase'>第 "+w.n+" 周 · "+esc(w.phase)+" · "+esc(w.range)+"</div><h3 style='margin-top:7px'>"+esc(dayNames[di])+"｜"+esc(daySkills[di])+"</h3><p>"+esc(text)+"</p>"+(w.milestone?"<p class='small warn'>阶段提醒："+esc(w.milestone)+"</p>":"")+"<label class='toggleline'><input type='checkbox' id='todayCheck' "+((low?lowDone:fullDone)?"checked":"")+" onchange='"+(low?"toggleTodayLow()":"toggleTodayDone()")+"' > "+(low?"我完成了今天的保底任务":"我完成了今天的标准任务")+"</label>";
+ document.getElementById("lowPanel").classList.toggle("hide",!low);
+ document.getElementById("timeBreakdown").innerHTML="<b>"+(low?"低谷期：不追求完整时长":"建议时长："+Number(state.duration||75)+" 分钟")+"</b><p class='small muted'>"+esc(low?"最低完成标准：15 分钟左右的一项小任务；今天不需要补课或熬夜。":timeBreakdown(Number(state.duration||75)))+"</p>";
+ document.getElementById("weeklyFocus").innerHTML="<div class='pill'>听力："+esc(w.listen)+"</div><div class='pill'>口语："+esc(w.speak)+"</div><div class='pill'>阅读："+esc(w.read)+"</div><div class='pill'>写作："+esc(w.write)+"</div>";
+ renderStats();
+}
+function fillWeekSelect(){
+ var s=document.getElementById("weekSelect");
+ s.innerHTML=weeks.map(function(w){return "<option value='"+w.n+"'>第 "+w.n+" 周 · "+w.range+"</option>";}).join("");
+ s.value=String(clampWeek(state.selectedWeek||currentWeek()));
+ var r=document.getElementById("reviewWeek");
+ r.innerHTML=milestones.map(function(n){return "<option value='"+n+"'>第 "+n+" 周"+(n===1?"（基线）":"（阶段复盘）")+"</option>";}).join("");
+ r.value=String(state.reviewWeek||defaultReviewWeek());
+}
+function renderWeek(){
+ var n=clampWeek(state.selectedWeek||currentWeek()),w=weeks[n-1];
+ document.getElementById("weekSelect").value=String(n);
+ var html="<div class='weekhead'><div><div class='phase'>"+esc(w.phase)+"</div><h2>第 "+n+" 周 · "+esc(w.range)+"</h2><div class='small muted'>每周安排：周一听力、周二口语、周三阅读、周四听力、周五写作、周六综合、周日周测。</div></div><div><span class='pill'>听力："+esc(w.listen)+"</span><span class='pill'>口语："+esc(w.speak)+"</span></div></div>";
+ html+="<div class='note'><b>本周重点</b><p class='small'>阅读： "+esc(w.read)+" · 写作： "+esc(w.write)+"</p><p class='small muted'>阅读课程： "+esc(w.readCourse)+"；写作课程： "+esc(w.writeCourse)+"。视频时长包含在每日总时长内。</p></div>";
+ if(w.milestone)html+="<div class='note' style='margin-top:10px;border-color:#76643a'><b class='warn'>阶段检查</b><p class='small'>"+esc(w.milestone)+"</p><button class='btn' onclick='openReview("+n+")'>填写本阶段复盘</button></div>";
+ for(var d=0;d<7;d++){
+  var k=keyFor(n,d),full=!!state.full[k],low=!!state.low[k];
+  html+="<div class='taskline "+(full?"done":"")+"'><div class='tasktop'><input type='checkbox' class='fullCheck' data-key='"+k+"' "+(full?"checked":"")+" aria-label='标准任务完成'><div><div class='tasktitle'>"+esc(dayNames[d])+" · "+esc(daySkills[d])+"</div><p class='tasktext'>"+esc(taskText(w,d))+"</p></div></div><div class='taskfoot'><span class='small muted'>保底：任选一项 15 分钟小任务，不追求补齐整天计划。</span><label class='lowcheck'><input type='checkbox' class='lowCheck' data-key='"+k+"' "+(low?"checked":"")+"> 低谷保底完成</label></div></div>";
+ }
+ document.getElementById("weekDetail").innerHTML=html;
+ renderStats();
+}
+function selectWeek(n){state.selectedWeek=clampWeek(n);saveState();renderWeek();renderStats();}
+function moveWeek(delta){selectWeek(clampWeek(Number(state.selectedWeek||currentWeek())+delta));}
+function toggleTodayDone(){
+ var w=clampWeek(currentWeek()),d=currentDay(),k=keyFor(w,d);
+ state.full[k]=!state.full[k];
+ if(state.full[k])state.low[k]=false;
+ saveState();renderToday();renderWeek();toast(state.full[k]?"已记录今天完成":"已取消完成记录");
+}
+function toggleTodayLow(){
+ var w=clampWeek(currentWeek()),d=currentDay(),k=keyFor(w,d);
+ state.low[k]=!state.low[k];
+ if(state.low[k])state.full[k]=false;
+ saveState();renderToday();renderWeek();toast(state.low[k]?"已记录保底任务":"已取消保底记录");
+}
+function toggleLowMode(){state.lowMode=document.getElementById("lowMode").checked;saveState();renderToday();}
+function addMinutes(n){
+ var dk=localDateKey(new Date());state.minutes[dk]=(Number(state.minutes[dk])||0)+n;saveState();renderStats();toast("已记录 "+n+" 分钟");
+}
+function renderCourses(){
+ var q=(document.getElementById("videoSearch").value||"").toLowerCase().trim();
+ var filtered=courses.filter(function(c){return (c.code+" "+c.name+" "+c.kind+" "+c.when+" "+c.note).toLowerCase().indexOf(q)>=0;});
+ document.getElementById("courseGrid").innerHTML=filtered.map(function(c){
+  return "<article class='video'><div class='row'><span class='pill'>"+esc(c.code)+"</span><span class='pill'>"+esc(c.kind)+"</span></div><h3>"+esc(c.name)+"</h3><div class='small muted'>计划周次： "+esc(c.when)+"</div><p class='small'>"+esc(c.note)+"</p><div class='actions'><a class='btn primary' href='"+esc(c.url)+"' target='_blank' rel='noopener noreferrer'>打开 B 站视频 ↗</a><button class='btn' onclick='copyText(\""+esc(c.url)+"\")'>复制链接</button></div></article>";
+ }).join("")||"<p class='muted'>没有找到匹配课程，试试“听力”“口语”“Simon”或课程代码。</p>";
+}
+function openReview(n){state.reviewWeek=milestones.indexOf(n)>=0?n:defaultReviewWeek();saveState();document.querySelector('[data-tab="review"]').click();loadReview();}
+function loadReview(){
+ var n=Number(document.getElementById("reviewWeek").value||state.reviewWeek||defaultReviewWeek());
+ state.reviewWeek=n;var r=state.reviews[n]||{};
+ document.getElementById("rListening").value=r.listening||"";
+ document.getElementById("rReading").value=r.reading||"";
+ document.getElementById("rWriting").value=r.writing||"";
+ document.getElementById("rSpeaking").value=r.speaking||"";
+ document.getElementById("rWins").value=r.wins||"";
+ document.getElementById("rNext").value=r.next||"";
+ saveState();
+}
+function saveReview(){
+ var n=Number(document.getElementById("reviewWeek").value||defaultReviewWeek());
+ state.reviews[n]={
+  listening:document.getElementById("rListening").value,
+  reading:document.getElementById("rReading").value,
+  writing:document.getElementById("rWriting").value,
+  speaking:document.getElementById("rSpeaking").value,
+  wins:document.getElementById("rWins").value,
+  next:document.getElementById("rNext").value,
+  savedAt:new Date().toISOString()
+ };
+ state.reviewWeek=n;saveState();renderMilestones();toast("第 "+n+" 周复盘已保存");
+}
+function renderMilestones(){
+ document.getElementById("milestoneList").innerHTML=milestones.map(function(n){
+  var r=state.reviews[n],saved=!!r;
+  var l=saved&&r.listening!==""?"听力 "+esc(r.listening)+"/40":"听力待记录";
+  var rd=saved&&r.reading!==""?"阅读 "+esc(r.reading)+"/40":"阅读待记录";
+  return "<div class='taskline'><div><div class='row'><b>第 "+n+" 周</b><span class='pill "+(saved?"good":"")+"'>"+(saved?"已填写":"待复盘")+"</span></div><p class='small muted'>"+l+" · "+rd+"</p></div><button class='btn' onclick='openReview("+n+")'>"+(saved?"查看 / 修改":"开始复盘")+"</button></div>";
+ }).join("");
+}
+function renderPrompt(){
+ var w=weeks[clampWeek(currentWeek())-1],done=[];
+ for(var d=0;d<7;d++)if(isDayDone(w.n,d))done.push(dayNames[d]);
+ var text="我的 IELTS Academic 7.0 学习进度：\n当前计划周：第 "+w.n+" 周（"+w.range+"）\n本周重点：听力 "+w.listen+"；口语 "+w.speak+"；阅读 "+w.read+"；写作 "+w.write+"\n本周已完成/保底： "+(done.join("、")||"尚未记录")+"\n累计记录学习时间： "+Object.values(state.minutes).reduce(function(a,b){return a+(Number(b)||0)},0)+" 分钟\n请根据这些记录帮我复盘，不要把单次练习直接换算成官方 Band。";
+ document.getElementById("promptText").textContent=text;
+}
+function exportData(){
+ var blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+ var url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="ielts-study-progress-"+localDateKey(new Date())+".json";a.click();URL.revokeObjectURL(url);toast("进度备份已导出");
+}
+function importData(ev){
+ var f=ev.target.files&&ev.target.files[0];if(!f)return;
+ var reader=new FileReader();reader.onload=function(){
+  try{var x=JSON.parse(reader.result);if(!x||typeof x!=="object")throw new Error("invalid");state=Object.assign(initialState(),x);saveState();fillWeekSelect();renderAll();loadReview();toast("进度已导入");}
+  catch(e){toast("文件无法识别，请选择本网站导出的 JSON");}
+  ev.target.value="";
+ };reader.readAsText(f);
+}
+function resetData(){
+ if(!confirm("确定清空当前浏览器中的雅思进度和复盘记录吗？建议先导出备份。"))return;
+ localStorage.removeItem(STORE_KEY);state=initialState();fillWeekSelect();renderAll();loadReview();toast("本机进度已清空");
+}
+function copyText(text){
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){toast("链接已复制");}).catch(function(){window.prompt("请复制链接：",text);});
+ else window.prompt("请复制链接：",text);
+}
+function setTab(id){
+ document.querySelectorAll(".tabbtn").forEach(function(b){b.classList.toggle("on",b.dataset.tab===id);});
+ document.querySelectorAll(".tab").forEach(function(s){s.classList.toggle("on",s.id===id);});
+ if(id==="today")renderToday();
+ if(id==="plan")renderWeek();
+ if(id==="videos")renderCourses();
+ if(id==="review"){loadReview();renderMilestones();}
+}
+document.querySelectorAll(".tabbtn").forEach(function(b){b.addEventListener("click",function(){setTab(b.dataset.tab);});});
+document.addEventListener("change",function(e){
+ var el=e.target;
+ if(el.classList.contains("fullCheck")){
+  var k=el.dataset.key;state.full[k]=el.checked;if(el.checked)state.low[k]=false;saveState();renderStats();renderWeek();renderToday();
+ }
+ if(el.classList.contains("lowCheck")){
+  var k2=el.dataset.key;state.low[k2]=el.checked;if(el.checked)state.full[k2]=false;saveState();renderStats();renderWeek();renderToday();
+ }
+});
+document.getElementById("duration").addEventListener("change",function(){state.duration=Number(this.value);saveState();renderToday();});
+document.getElementById("importFile").addEventListener("click",function(){this.value="";});
+function renderAll(){renderStats();renderToday();renderWeek();renderCourses();renderMilestones();renderPrompt();}
+fillWeekSelect();
+if(!state.selectedWeek||state.selectedWeek<1||state.selectedWeek>52)state.selectedWeek=clampWeek(currentWeek());
+renderAll();loadReview();
+</script>
+</body>
+</html>
